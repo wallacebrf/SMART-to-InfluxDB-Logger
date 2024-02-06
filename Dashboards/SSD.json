@@ -1,0 +1,3409 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_HOME_ENERGY",
+      "label": "Home_Energy",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.3.1"
+    },
+    {
+      "type": "datasource",
+      "id": "influxdb",
+      "name": "InfluxDB",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "dark-red",
+                  "index": 1,
+                  "text": "ERROR"
+                },
+                "1": {
+                  "color": "dark-green",
+                  "index": 0,
+                  "text": "OK"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 258
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 7,
+        "x": 0,
+        "y": 0
+      },
+      "id": 25,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"disk_serial\" or r[\"_field\"] == \"disk_model\" or r[\"_field\"] == \"disk_status\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Current_Pending_Sector\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n|> last()\r\n  |> limit(n: 1)\r\n |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n |> group(columns: [\"_time\"], mode:\"by\")\r\n |> map(\r\n    fn: (r) => ({\r\n        r with\r\n            //////////////////////////\r\n            //Disk_Status value mapping\r\n            //////////////////////////\r\n            disk_status_converted: if r.disk_status == 1 then\r\n                \"Passed\"\r\n            else if r.disk_status == 2 then\r\n                \"Failed\"    \r\n            else\r\n                \"ERROR!!!!\",\r\n        }),\r\n    )\r\n  |> drop(columns: [\"_measurement\", \"_stop\", \"_start\", \"_time\", \"nas_name\", \"disk_path\", \"smart_attribute\",\"disk_status\"])\r\n  |> rename(columns: {disk_model: \"Model\", disk_serial: \"Serial\", disk_status_converted: \"Status\"})\r\n  |> yield()",
+          "refId": "A"
+        }
+      ],
+      "title": "SATA1 Status",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "dark-red",
+                  "index": 1,
+                  "text": "ERROR"
+                },
+                "1": {
+                  "color": "dark-green",
+                  "index": 0,
+                  "text": "OK"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 263
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 7,
+        "x": 7,
+        "y": 0
+      },
+      "id": 26,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"disk_serial\" or r[\"_field\"] == \"disk_model\" or r[\"_field\"] == \"disk_status\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Current_Pending_Sector\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n|> last()\r\n  |> limit(n: 1)\r\n |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n |> group(columns: [\"_time\"], mode:\"by\")\r\n |> map(\r\n    fn: (r) => ({\r\n        r with\r\n            //////////////////////////\r\n            //Disk_Status value mapping\r\n            //////////////////////////\r\n            disk_status_converted: if r.disk_status == 1 then\r\n                \"Passed\"\r\n            else if r.disk_status == 2 then\r\n                \"Failed\"    \r\n            else\r\n                \"ERROR!!!!\",\r\n        }),\r\n    )\r\n  |> drop(columns: [\"_measurement\", \"_stop\", \"_start\", \"_time\", \"nas_name\", \"disk_path\", \"smart_attribute\",\"disk_status\"])\r\n  |> rename(columns: {disk_model: \"Model\", disk_serial: \"Serial\", disk_status_converted: \"Status\"})\r\n  |> yield()",
+          "refId": "A"
+        }
+      ],
+      "title": "SATA2 Status",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "dark-red",
+                  "index": 1,
+                  "text": "ERROR"
+                },
+                "1": {
+                  "color": "dark-green",
+                  "index": 0,
+                  "text": "OK"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 243
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 7,
+        "x": 14,
+        "y": 0
+      },
+      "id": 27,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"disk_serial\" or r[\"_field\"] == \"disk_model\" or r[\"_field\"] == \"disk_status\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Current_Pending_Sector\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n|> last()\r\n  |> limit(n: 1)\r\n |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n |> group(columns: [\"_time\"], mode:\"by\")\r\n |> map(\r\n    fn: (r) => ({\r\n        r with\r\n            //////////////////////////\r\n            //Disk_Status value mapping\r\n            //////////////////////////\r\n            disk_status_converted: if r.disk_status == 1 then\r\n                \"Passed\"\r\n            else if r.disk_status == 2 then\r\n                \"Failed\"    \r\n            else\r\n                \"ERROR!!!!\",\r\n        }),\r\n    )\r\n  |> drop(columns: [\"_measurement\", \"_stop\", \"_start\", \"_time\", \"nas_name\", \"disk_path\", \"smart_attribute\",\"disk_status\"])\r\n  |> rename(columns: {disk_model: \"Model\", disk_serial: \"Serial\", disk_status_converted: \"Status\"})\r\n  |> yield()",
+          "refId": "A"
+        }
+      ],
+      "title": "SATA3 Status",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Attribute"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 248
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 78
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RAW Value"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Current Value"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 104
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Threshold Value"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 125
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 27,
+        "w": 10,
+        "x": 0,
+        "y": 4
+      },
+      "id": 51,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "ID"
+          }
+        ]
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"ID\" or r[\"_field\"] == \"RAW_value\" or r[\"_field\"] == \"current_value\" or r[\"_field\"] == \"threshold_value\" or r[\"_field\"] == \"worst_value\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Avg_Block-Erase_Count\" or r[\"smart_attribute\"] == \"Bckgnd_Program_Page_Cnt\" or r[\"smart_attribute\"] == \"Command_Timeout\" or r[\"smart_attribute\"] == \"Current_Pending_Sector\" or r[\"smart_attribute\"] == \"End-to-End_Error\" or r[\"smart_attribute\"] == \"Erase_Fail_Count\" or r[\"smart_attribute\"] == \"Hardware_ECC_Recovered\" or r[\"smart_attribute\"] == \"Host_Program_Page_Count\" or r[\"smart_attribute\"] == \"Offline_Uncorrectable\" or r[\"smart_attribute\"] == \"Percent_Lifetime_Remain\" or r[\"smart_attribute\"] == \"Power_Cycle_Count\" or r[\"smart_attribute\"] == \"Power_On_Hours\" or r[\"smart_attribute\"] == \"Program_Fail_Count\" or r[\"smart_attribute\"] == \"RAIN_Success_Recovered\" or r[\"smart_attribute\"] == \"Raw_Read_Error_Rate\" or r[\"smart_attribute\"] == \"Reallocated_Event_Count\" or r[\"smart_attribute\"] == \"Reallocated_Sector_Ct\" or r[\"smart_attribute\"] == \"Reported_Uncorrect\" or r[\"smart_attribute\"] == \"Reserved_Block_Pct\" or r[\"smart_attribute\"] == \"SATA_Int_Downshift_Ct\" or r[\"smart_attribute\"] == \"Temperature_Celsius\" or r[\"smart_attribute\"] == \"Total_LBAs_Written\" or r[\"smart_attribute\"] == \"UDMA_CRC_Error_Count\" or r[\"smart_attribute\"] == \"Unexpect_Power_Loss_Ct\" or r[\"smart_attribute\"] == \"Unused_Rsvd_Blk_Cnt_Tot\" or r[\"smart_attribute\"] == \"Write_Error_Rate\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> last()\r\n  |> limit(n: 1)\r\n |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n |> group(columns: [\"_time\"], mode:\"by\")\r\n  |> drop(columns: [\"_measurement\", \"_stop\", \"_start\", \"_time\", \"nas_name\", \"disk_path\"])\r\n  |> yield()",
+          "refId": "A"
+        }
+      ],
+      "title": "sata1",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "ID": "ID",
+              "RAW_value": "RAW Value",
+              "current_value": "Current Value",
+              "smart_attribute": "Attribute",
+              "threshold_value": "Threshold Value",
+              "worst_value": "Worst Value"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Attribute"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 248
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 78
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RAW Value"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Current Value"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 104
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Threshold Value"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 125
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 27,
+        "w": 10,
+        "x": 10,
+        "y": 4
+      },
+      "id": 52,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "ID"
+          }
+        ]
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"ID\" or r[\"_field\"] == \"RAW_value\" or r[\"_field\"] == \"current_value\" or r[\"_field\"] == \"threshold_value\" or r[\"_field\"] == \"worst_value\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Avg_Block-Erase_Count\" or r[\"smart_attribute\"] == \"Bckgnd_Program_Page_Cnt\" or r[\"smart_attribute\"] == \"Command_Timeout\" or r[\"smart_attribute\"] == \"Current_Pending_Sector\" or r[\"smart_attribute\"] == \"End-to-End_Error\" or r[\"smart_attribute\"] == \"Erase_Fail_Count\" or r[\"smart_attribute\"] == \"Hardware_ECC_Recovered\" or r[\"smart_attribute\"] == \"Host_Program_Page_Count\" or r[\"smart_attribute\"] == \"Offline_Uncorrectable\" or r[\"smart_attribute\"] == \"Percent_Lifetime_Remain\" or r[\"smart_attribute\"] == \"Power_Cycle_Count\" or r[\"smart_attribute\"] == \"Power_On_Hours\" or r[\"smart_attribute\"] == \"Program_Fail_Count\" or r[\"smart_attribute\"] == \"RAIN_Success_Recovered\" or r[\"smart_attribute\"] == \"Raw_Read_Error_Rate\" or r[\"smart_attribute\"] == \"Reallocated_Event_Count\" or r[\"smart_attribute\"] == \"Reallocated_Sector_Ct\" or r[\"smart_attribute\"] == \"Reported_Uncorrect\" or r[\"smart_attribute\"] == \"Reserved_Block_Pct\" or r[\"smart_attribute\"] == \"SATA_Int_Downshift_Ct\" or r[\"smart_attribute\"] == \"Temperature_Celsius\" or r[\"smart_attribute\"] == \"Total_LBAs_Written\" or r[\"smart_attribute\"] == \"UDMA_CRC_Error_Count\" or r[\"smart_attribute\"] == \"Unexpect_Power_Loss_Ct\" or r[\"smart_attribute\"] == \"Unused_Rsvd_Blk_Cnt_Tot\" or r[\"smart_attribute\"] == \"Write_Error_Rate\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> last()\r\n  |> limit(n: 1)\r\n |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n |> group(columns: [\"_time\"], mode:\"by\")\r\n  |> drop(columns: [\"_measurement\", \"_stop\", \"_start\", \"_time\", \"nas_name\", \"disk_path\"])\r\n  |> yield()",
+          "refId": "A"
+        }
+      ],
+      "title": "sata2",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "ID": "ID",
+              "RAW_value": "RAW Value",
+              "current_value": "Current Value",
+              "smart_attribute": "Attribute",
+              "threshold_value": "Threshold Value",
+              "worst_value": "Worst Value"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Attribute"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 248
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 78
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RAW Value"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Current Value"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 104
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Threshold Value"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 125
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 27,
+        "w": 10,
+        "x": 5,
+        "y": 31
+      },
+      "id": 53,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "ID"
+          }
+        ]
+      },
+      "pluginVersion": "10.1.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"ID\" or r[\"_field\"] == \"RAW_value\" or r[\"_field\"] == \"current_value\" or r[\"_field\"] == \"threshold_value\" or r[\"_field\"] == \"worst_value\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Avg_Block-Erase_Count\" or r[\"smart_attribute\"] == \"Bckgnd_Program_Page_Cnt\" or r[\"smart_attribute\"] == \"Command_Timeout\" or r[\"smart_attribute\"] == \"Current_Pending_Sector\" or r[\"smart_attribute\"] == \"End-to-End_Error\" or r[\"smart_attribute\"] == \"Erase_Fail_Count\" or r[\"smart_attribute\"] == \"Hardware_ECC_Recovered\" or r[\"smart_attribute\"] == \"Host_Program_Page_Count\" or r[\"smart_attribute\"] == \"Offline_Uncorrectable\" or r[\"smart_attribute\"] == \"Percent_Lifetime_Remain\" or r[\"smart_attribute\"] == \"Power_Cycle_Count\" or r[\"smart_attribute\"] == \"Power_On_Hours\" or r[\"smart_attribute\"] == \"Program_Fail_Count\" or r[\"smart_attribute\"] == \"RAIN_Success_Recovered\" or r[\"smart_attribute\"] == \"Raw_Read_Error_Rate\" or r[\"smart_attribute\"] == \"Reallocated_Event_Count\" or r[\"smart_attribute\"] == \"Reallocated_Sector_Ct\" or r[\"smart_attribute\"] == \"Reported_Uncorrect\" or r[\"smart_attribute\"] == \"Reserved_Block_Pct\" or r[\"smart_attribute\"] == \"SATA_Int_Downshift_Ct\" or r[\"smart_attribute\"] == \"Temperature_Celsius\" or r[\"smart_attribute\"] == \"Total_LBAs_Written\" or r[\"smart_attribute\"] == \"UDMA_CRC_Error_Count\" or r[\"smart_attribute\"] == \"Unexpect_Power_Loss_Ct\" or r[\"smart_attribute\"] == \"Unused_Rsvd_Blk_Cnt_Tot\" or r[\"smart_attribute\"] == \"Write_Error_Rate\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> last()\r\n  |> limit(n: 1)\r\n |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n |> group(columns: [\"_time\"], mode:\"by\")\r\n  |> drop(columns: [\"_measurement\", \"_stop\", \"_start\", \"_time\", \"nas_name\", \"disk_path\"])\r\n  |> yield()",
+          "refId": "A"
+        }
+      ],
+      "title": "sata3",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "ID": "ID",
+              "RAW_value": "RAW Value",
+              "current_value": "Current Value",
+              "smart_attribute": "Attribute",
+              "threshold_value": "Threshold Value",
+              "worst_value": "Worst Value"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "RAW value: This value is expressed as a percentage of the average erase count and the rated erase\ncount of the media, which is the percentage of lifetime used as opposed to the Current\nValue which is the percentage of lifetime remaining.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Life Remaining",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 4,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 58
+      },
+      "id": 34,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Percent_Lifetime_Remain\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: (100.0 - r.RAW_value)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n    |> rename(columns: {sata1_percent_life_remain: \"SATA1 Percent Life Remaining\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Percent_Lifetime_Remain\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: (100.0 - r.RAW_value)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n    |> rename(columns: {sata1_percent_life_remain: \"SATA2 Percent Life Remaining\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Percent_Lifetime_Remain\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: (100.0 - r.RAW_value)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n    |> rename(columns: {sata1_percent_life_remain: \"SATA3 Percent Life Remaining\"})\r\n  |> yield()",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "Reallocated_Sector_Ct=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reallocated_Sector_Ct\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\n\r\nUnused_Rsvd_Blk_Cnt_Tot=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Unused_Rsvd_Blk_Cnt_Tot\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\njoin(tables: {Unused_Rsvd_Blk_Cnt_Tot: Unused_Rsvd_Blk_Cnt_Tot, Reallocated_Sector_Ct: Reallocated_Sector_Ct}, on: [\"_time\",\"_field\"])\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: ((r._value_Unused_Rsvd_Blk_Cnt_Tot / (r._value_Unused_Rsvd_Blk_Cnt_Tot + r._value_Reallocated_Sector_Ct))*100.0)}))\r\n   |> drop(columns: [\"_field_Reallocated_Sector_Ct\",\"_field_Unused_Rsvd_Blk_Cnt_Tot\",\"_value_Reallocated_Sector_Ct\",\"_value_Unused_Rsvd_Blk_Cnt_Tot\", \"_field\"])\r\n   |> rename(columns: {sata1_percent_life_remain: \"SATA1 Reserved Block Remaining\"})\r\n  |> yield()",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "Reallocated_Sector_Ct=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reallocated_Sector_Ct\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\n\r\nUnused_Rsvd_Blk_Cnt_Tot=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Unused_Rsvd_Blk_Cnt_Tot\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\njoin(tables: {Unused_Rsvd_Blk_Cnt_Tot: Unused_Rsvd_Blk_Cnt_Tot, Reallocated_Sector_Ct: Reallocated_Sector_Ct}, on: [\"_time\",\"_field\"])\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: ((r._value_Unused_Rsvd_Blk_Cnt_Tot / (r._value_Unused_Rsvd_Blk_Cnt_Tot + r._value_Reallocated_Sector_Ct))*100.0)}))\r\n   |> drop(columns: [\"_field_Reallocated_Sector_Ct\",\"_field_Unused_Rsvd_Blk_Cnt_Tot\",\"_value_Reallocated_Sector_Ct\",\"_value_Unused_Rsvd_Blk_Cnt_Tot\", \"_field\"])\r\n   |> rename(columns: {sata1_percent_life_remain: \"SATA2 Reserved Block Remaining\"})\r\n  |> yield()",
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "Reallocated_Sector_Ct=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reallocated_Sector_Ct\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\n\r\nUnused_Rsvd_Blk_Cnt_Tot=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Unused_Rsvd_Blk_Cnt_Tot\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\njoin(tables: {Unused_Rsvd_Blk_Cnt_Tot: Unused_Rsvd_Blk_Cnt_Tot, Reallocated_Sector_Ct: Reallocated_Sector_Ct}, on: [\"_time\",\"_field\"])\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: ((r._value_Unused_Rsvd_Blk_Cnt_Tot / (r._value_Unused_Rsvd_Blk_Cnt_Tot + r._value_Reallocated_Sector_Ct))*100.0)}))\r\n   |> drop(columns: [\"_field_Reallocated_Sector_Ct\",\"_field_Unused_Rsvd_Blk_Cnt_Tot\",\"_value_Reallocated_Sector_Ct\",\"_value_Unused_Rsvd_Blk_Cnt_Tot\", \"_field\"])\r\n   |> rename(columns: {sata1_percent_life_remain: \"SATA3 Reserved Block Remaining\"})\r\n  |> yield()",
+          "refId": "I"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "//Micron ECO 5200 1.92TB SSD is rated for 3.5PB of write endurance @ 512-bit sectors\r\n//SSD data sheet found here: https://www.micron.com/solutions/technical-briefs/micron-5200-series-of-sata-ssds\r\n\r\nfrom(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Total_LBAs_Written\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: 100.0-(((r.RAW_value*512.0)/3500000000000000.0)*100.0)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n    |> rename(columns: {sata1_percent_life_remain: \"SATA1 Write Endurance Remaining\"})\r\n  |> yield()",
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "//Micron ECO 5200 1.92TB SSD is rated for 3.5PB of write endurance  @ 512-bit sectors\r\n//SSD data sheet found here: https://www.micron.com/solutions/technical-briefs/micron-5200-series-of-sata-ssds\r\n\r\nfrom(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Total_LBAs_Written\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: 100.0-(((r.RAW_value*512.0)/3500000000000000.0)*100.0)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n    |> rename(columns: {sata1_percent_life_remain: \"SATA2 Write Endurance Remaining\"})\r\n  |> yield()",
+          "refId": "G"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "//Micron ECO 5200 1.92TB SSD is rated for 3.5PB of write endurance @ 512-bit sectors\r\n//SSD data sheet found here: https://www.micron.com/solutions/technical-briefs/micron-5200-series-of-sata-ssds\r\n\r\nfrom(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Total_LBAs_Written\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: 100.0-(((r.RAW_value*512.0)/3500000000000000.0)*100.0)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n    |> rename(columns: {sata1_percent_life_remain: \"SATA3 Write Endurance Remaining\"})\r\n  |> yield()",
+          "refId": "H"
+        }
+      ],
+      "title": "Life Remaining",
+      "transformations": [],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Endurance (TBW in PB) for Micron 5200 ECO is 3.5 Peta-Bytes",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Bytes Written",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 3,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 65
+      },
+      "id": 46,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "//Micron ECO 5200 1.92TB SSD is rated for 3.5PB of write endurance @ 512-bit sectors\r\n//SSD data sheet found here: https://www.micron.com/solutions/technical-briefs/micron-5200-series-of-sata-ssds\r\n\r\nfrom(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Total_LBAs_Written\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: (r.RAW_value*512.0)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n    |> rename(columns: {sata1_percent_life_remain: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "//Micron ECO 5200 1.92TB SSD is rated for 3.5PB of write endurance @ 512-bit sectors\r\n//SSD data sheet found here: https://www.micron.com/solutions/technical-briefs/micron-5200-series-of-sata-ssds\r\n\r\nfrom(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Total_LBAs_Written\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: (r.RAW_value*512.0)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n    |> rename(columns: {sata1_percent_life_remain: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "//Micron ECO 5200 1.92TB SSD is rated for 3.5PB of write endurance @ 512-bit sectors\r\n//SSD data sheet found here: https://www.micron.com/solutions/technical-briefs/micron-5200-series-of-sata-ssds\r\n\r\nfrom(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Total_LBAs_Written\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: (r.RAW_value*512.0)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n    |> rename(columns: {sata1_percent_life_remain: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Bytes Written",
+      "transformations": [],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Write amplification factor (WAF) is a numerical value that represents the amount of data a solid state storage controller has to write in relation to the amount of data that the host’s flash controller has to write.  The numerical value is calculated as a rate by dividing the amount of data written to flash media by the amount of data written by the host.\n\nA write amplification factor of 1 means that 1GB of data was written to the flash host media and the host’s flash controller also wrote 1GB.  A write factor of 1 is ideal, but occurs less frequently as the media gets used and the number of program/erase (P/E) cycles increases.  Program/erase cycles are managed by the device's flash controller, which uses a logical to physical mapping system known as logical block addressing (LBA) to manage data. When data is rewritten, the flash controller writes the new data in a different location and then updates the LBA with the new location. Invalid data continues to reside in the old location and those cells must be erased before they can be written to again. Because each cell can only tolerate a finite number of program/erase cycles before becoming unreliable, the higher the write amplification factor, the closer the media is to end-of-life.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Write Amplification Factor",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 4,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "id": 45,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "Host_Program_Page_Count=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Host_Program_Page_Count\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\n\r\nBckgnd_Program_Page_Cnt=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Bckgnd_Program_Page_Cnt\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\njoin(tables: {Bckgnd_Program_Page_Cnt: Bckgnd_Program_Page_Cnt, Host_Program_Page_Count: Host_Program_Page_Count}, on: [\"_time\",\"_field\"])\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: ((r._value_Host_Program_Page_Count + r._value_Bckgnd_Program_Page_Cnt)/r._value_Host_Program_Page_Count)}))\r\n   |> drop(columns: [\"_value_Host_Program_Page_Count\",\"_value_Bckgnd_Program_Page_Cnt\",\"_value_Reallocated_Sector_Ct\",\"_value_Unused_Rsvd_Blk_Cnt_Tot\", \"_field\"])\r\n   |> rename(columns: {sata1_percent_life_remain: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "Host_Program_Page_Count=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Host_Program_Page_Count\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\n\r\nBckgnd_Program_Page_Cnt=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Bckgnd_Program_Page_Cnt\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\njoin(tables: {Bckgnd_Program_Page_Cnt: Bckgnd_Program_Page_Cnt, Host_Program_Page_Count: Host_Program_Page_Count}, on: [\"_time\",\"_field\"])\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: ((r._value_Host_Program_Page_Count + r._value_Bckgnd_Program_Page_Cnt)/r._value_Host_Program_Page_Count)}))\r\n   |> drop(columns: [\"_value_Host_Program_Page_Count\",\"_value_Bckgnd_Program_Page_Cnt\",\"_value_Reallocated_Sector_Ct\",\"_value_Unused_Rsvd_Blk_Cnt_Tot\", \"_field\"])\r\n   |> rename(columns: {sata1_percent_life_remain: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "Host_Program_Page_Count=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Host_Program_Page_Count\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\n\r\nBckgnd_Program_Page_Cnt=from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Bckgnd_Program_Page_Cnt\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_start\", \"_stop\"])\r\n\r\njoin(tables: {Bckgnd_Program_Page_Cnt: Bckgnd_Program_Page_Cnt, Host_Program_Page_Count: Host_Program_Page_Count}, on: [\"_time\",\"_field\"])\r\n    |> map(fn: (r) => ({r with sata1_percent_life_remain: ((r._value_Host_Program_Page_Count + r._value_Bckgnd_Program_Page_Cnt)/r._value_Host_Program_Page_Count)}))\r\n   |> drop(columns: [\"_value_Host_Program_Page_Count\",\"_value_Bckgnd_Program_Page_Cnt\",\"_value_Reallocated_Sector_Ct\",\"_value_Unused_Rsvd_Blk_Cnt_Tot\", \"_field\"])\r\n   |> rename(columns: {sata1_percent_life_remain: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Write Amplification Factor",
+      "transformations": [],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Average erase count of all good blocks. \nalso known as \"FTL Program Page Count\" Number of NAND pages written by the FTL.\n\nThis value stores the cumulative FTL program page count. This attribute tracks the\nnumber of NAND pages programed by the FTL which are in addition to operations programed by the host. Write amplification factor can be calculated by WAF = (Attrib_247 +\nAttrib_248) / Attrib_247.\n\nWAF = (Host Program Page Count + FTL Program Page Count) / Host Program Page Count",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Bckgnd Program Page Cnt",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 79
+      },
+      "id": 28,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Bckgnd_Program_Page_Cnt\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Bckgnd_Program_Page_Cnt\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Bckgnd_Program_Page_Cnt\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Bckgnd Program Page Cnt",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Number of NAND pages of data written by the host",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Host_Program_Page_Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 86
+      },
+      "id": 33,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Host_Program_Page_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Host_Program_Page_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Host_Program_Page_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Host_Program_Page_Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Reallocated_Sector_Ct",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 93
+      },
+      "id": 43,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reallocated_Sector_Ct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reallocated_Sector_Ct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reallocated_Sector_Ct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Reallocated_Sector_Ct",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "This value is the number of reserved blocks that have been used on the drive",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Reserved_Block_Pct",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 100
+      },
+      "id": 44,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reserved_Block_Pct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reserved_Block_Pct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reserved_Block_Pct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Reserved_Block_Pct",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Reallocated_Event_Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 107
+      },
+      "id": 41,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reallocated_Event_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reallocated_Event_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Reallocated_Event_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Reallocated_Event_Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "This value contains the raw number of ERASE failure events over the lifetime of the device.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Erase_Fail_Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 114
+      },
+      "id": 31,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Erase_Fail_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Erase_Fail_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Erase_Fail_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Erase_Fail_Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Average erase count of all good blocks",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Avg Block Erase Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 121
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Avg_Block-Erase_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Avg_Block-Erase_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Avg_Block-Erase_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Avg Block Erase Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Upon any HRESET, COMRESET, SRST: adds ac\n\nThis counter is incremented by the number of outstanding commands when the host\nissues a soft reset or a comreset. If the value ever exceeds FFFFFFFFFFFFh, it wraps\naround.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Command Timeout",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 128
+      },
+      "id": 29,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Command_Timeout\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Command_Timeout\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Command_Timeout\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Command Timeout",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "hat after transferring through the cache RAM data buffer, the parity data between the host and the hard drive did not match.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "End-to-End_Error",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 135
+      },
+      "id": 30,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"End-to-End_Error\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"End-to-End_Error\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"End-to-End_Error\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "End-to-End_Error",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Tracks the total number of bits corrected over the lifetime of\nthe device",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Hardware_ECC_Recovered",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 142
+      },
+      "id": 32,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Hardware_ECC_Recovered\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Hardware_ECC_Recovered\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Hardware_ECC_Recovered\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Hardware_ECC_Recovered",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Uncorrectable error count detected during SMART offline scan\n\nThis value is the cumulative number of unrecoverable read errors found in a background media scan.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Offline_Uncorrectable",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 149
+      },
+      "id": 35,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Offline_Uncorrectable\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Offline_Uncorrectable\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Offline_Uncorrectable\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Offline_Uncorrectable",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Power_Cycle_Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 156
+      },
+      "id": 36,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Power_Cycle_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Power_Cycle_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Power_Cycle_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Power_Cycle_Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Power_On_Days",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 163
+      },
+      "id": 37,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Power_On_Hours\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with SATA1: (r.RAW_value/24.0)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Power_On_Hours\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with SATA2: (r.RAW_value/24.0)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Power_On_Hours\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n   |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n    |> map(fn: (r) => ({r with SATA3: (r.RAW_value/24.0)}))\r\n    |> drop(columns: [\"_measurement\",\"nas_name\", \"disk_path\", \"smart_attribute\", \"_field\", \"_start\", \"_stop\", \"RAW_value\"])\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Power_On_Days",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Number of NAND program status failures",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Program_Fail_Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 170
+      },
+      "id": 38,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Program_Fail_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Program_Fail_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Program_Fail_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Program_Fail_Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "The total number of translation units (TU) successfully recovered by Micron's redundant array of independent NAND (RAIN) technology; increments when RAIN successfully recovers user data.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "RAIN_Success_Recovered",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 177
+      },
+      "id": 40,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"RAIN_Success_Recovered\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"RAIN_Success_Recovered\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"RAIN_Success_Recovered\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "RAIN_Success_Recovered",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Raw correctable and uncorrectable read error rate",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Raw_Read_Error_Rate",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 184
+      },
+      "id": 39,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Raw_Read_Error_Rate\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Raw_Read_Error_Rate\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Raw_Read_Error_Rate\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Raw_Read_Error_Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Represents the total number of host interface speed downshifts on the SATA link. For\nexample, the SATA link shifts to a lower-generation speed (1.5 Gb/s or 3.0 Gb/s) than\nwhat was previously negotiated (6 Gb/s).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "SATA_Int_Downshift_Ct",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 191
+      },
+      "id": 42,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"SATA_Int_Downshift_Ct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"SATA_Int_Downshift_Ct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"SATA_Int_Downshift_Ct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "SATA_Int_Downshift_Ct",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "UDMA_CRC_Error_Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 198
+      },
+      "id": 47,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"UDMA_CRC_Error_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"UDMA_CRC_Error_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"UDMA_CRC_Error_Count\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "UDMA_CRC_Error_Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Unexpect_Power_Loss_Ct",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 205
+      },
+      "id": 48,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Unexpect_Power_Loss_Ct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Unexpect_Power_Loss_Ct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Unexpect_Power_Loss_Ct\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Unexpect_Power_Loss_Ct",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_HOME_ENERGY}"
+      },
+      "description": "Nominal number is 6718 for a Micron 5200 ECO 1.92TB SSD",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Unexpect_Power_Loss_Ct",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 212
+      },
+      "id": 49,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata1\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Unused_Rsvd_Blk_Cnt_Tot\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA1\"})\r\n  |> yield()",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata2\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Unused_Rsvd_Blk_Cnt_Tot\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA2\"})\r\n  |> yield()",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_HOME_ENERGY}"
+          },
+          "hide": false,
+          "query": "from(bucket: \"Test/autogen\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"synology_SMART_status2\")\r\n  |> filter(fn: (r) => r[\"nas_name\"] == \"Server-Plex\")\r\n  |> filter(fn: (r) => r[\"disk_path\"] == \"/dev/sata3\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"RAW_value\")\r\n  |> filter(fn: (r) => r[\"smart_attribute\"] == \"Unused_Rsvd_Blk_Cnt_Tot\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\r\n  |> drop(columns: [\"_field\",\"_measurement\",\"nas_name\",\"disk_path\",\"smart_attribute\",\"_start\",\"_stop\"])\r\n   |> rename(columns: {_value: \"SATA3\"})\r\n  |> yield()",
+          "refId": "C"
+        }
+      ],
+      "title": "Unused_Rsvd_Blk_Cnt_Tot",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "",
+  "revision": 1,
+  "schemaVersion": 39,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Server-PLEX SMART",
+  "uid": "SxtYe7v7z",
+  "version": 29,
+  "weekStart": ""
+}
