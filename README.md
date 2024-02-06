@@ -346,6 +346,30 @@ GPT PMBR size mismatch (239649 != 245759) will be corrected by write.
 The backup GPT table is not on the end of the device. This problem will be corrected by write.
 
 
+
+root@Server_NVR:/volume1/web/logging# bash smart.sh
+nvme_number_installed is -1
+no NVME drives installed, skipping NVME capture
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Raw_Read_Error_Rate disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=1,current_value=100,worst_value=100,threshold_value=016,RAW_value=0,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Throughput_Performance disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=2,current_value=132,worst_value=132,threshold_value=054,RAW_value=96,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Spin_Up_Time disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=3,current_value=174,worst_value=174,threshold_value=024,RAW_value=429,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Start_Stop_Count disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=4,current_value=100,worst_value=100,threshold_value=000,RAW_value=14,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Reallocated_Sector_Ct disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=5,current_value=100,worst_value=100,threshold_value=005,RAW_value=0,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Seek_Error_Rate disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=7,current_value=100,worst_value=100,threshold_value=067,RAW_value=0,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Seek_Time_Performance disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=8,current_value=128,worst_value=128,threshold_value=020,RAW_value=18,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Power_On_Hours disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=9,current_value=096,worst_value=096,threshold_value=000,RAW_value=31876,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Spin_Retry_Count disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=10,current_value=100,worst_value=100,threshold_value=060,RAW_value=0,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Power_Cycle_Count disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=12,current_value=100,worst_value=100,threshold_value=000,RAW_value=14,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Power-Off_Retract_Count disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=192,current_value=099,worst_value=099,threshold_value=000,RAW_value=1262,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Load_Cycle_Count disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=193,current_value=099,worst_value=099,threshold_value=000,RAW_value=1262,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Temperature_Celsius disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=194,current_value=196,worst_value=196,threshold_value=000,RAW_value=33,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Reallocated_Event_Count disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=196,current_value=100,worst_value=100,threshold_value=000,RAW_value=0,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Current_Pending_Sector disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=197,current_value=100,worst_value=100,threshold_value=000,RAW_value=0,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Offline_Uncorrectable disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=198,current_value=100,worst_value=100,threshold_value=000,RAW_value=0,disk_status=1
+synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=UDMA_CRC_Error_Count disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=199,current_value=200,worst_value=200,threshold_value=000,RAW_value=0,disk_status=1
+
+
+
 ## Acknowledgments
 
 
