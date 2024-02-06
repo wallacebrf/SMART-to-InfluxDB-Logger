@@ -317,6 +317,35 @@ Project Link: [https://github.com/wallacebrf/synology_snmp)
 
 
 <!-- ACKNOWLEDGMENTS -->
+
+
+
+
+root@Server_NVR:/volume1/web/logging# time bash synology_SMART_snmp.sh
+Capturing 1 times
+no NVME drives installed, skipping NVME capture
+Capture #1 complete
+
+real    1m22.314s
+user    0m30.592s
+sys     0m9.620s
+
+
+
+root@Server_NVR:/volume1/web/logging# time bash smart.sh
+no NVME drives installed, skipping NVME capture
+
+real    0m2.218s
+user    0m0.960s
+sys     0m0.195s
+
+
+GPT PMBR size mismatch (239649 != 245759) will be corrected by write.
+The backup GPT table is not on the end of the device. This problem will be corrected by write.
+GPT PMBR size mismatch (239649 != 245759) will be corrected by write.
+The backup GPT table is not on the end of the device. This problem will be corrected by write.
+
+
 ## Acknowledgments
 
 
