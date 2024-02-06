@@ -1,4 +1,9 @@
 #!/bin/bash
+#Version 2/6/2026
+#By Brian Wallace
+#########################################################
+
+
 #check that the script is running as root or some of the commands required will not work
 if [[ $( whoami ) != "root" ]]; then
 	echo -e "ERROR - Script requires ROOT permissions, exiting script"
@@ -6,21 +11,21 @@ if [[ $( whoami ) != "root" ]]; then
 fi
 
 #########################################################
-#SCRIPT VARIABLES
-#if a different directory is desired, change these variables accordingly
-email_contents="/volume1/web/logging/notifications/SMART_Logging_email_contents.txt"
-lock_file_location="/volume1/web/logging/notifications/SMART_Logging.lock"
-email_last_sent="/volume1/web/logging/notifications/${0##*/}_SMART_Logging_last_message_sent.txt"
-debug=0
-#config_file_location="/volume1/web/config/config_files/config_files_local"
-#config_file_name="smart_logging_config.txt"
-#measurement="synology_SMART_status2"
-#nas_name="Server2"
-#use_mail_plus_server=1
+#USER ADJUSABLE SCRIPT VARIABLES
+email_contents="/volume1/web/logging/notifications/SMART_Logging_email_contents.txt"					#when email notifications are sent, the contents of the email and a log entry if the email successfully sent is saved to this file
+lock_file_location="/volume1/web/logging/notifications/SMART_Logging.lock"								#file created while the script is running and deleted when the script is done. this is to prevent more than one copy of the script from running at a time
+email_last_sent="/volume1/web/logging/notifications/${0##*/}_SMART_Logging_last_message_sent.txt"		#some emails are to be sent only every 60 minutes (like config file missing/corrupt messages) to prevent your inbox from being spammed
+debug=0																									#if set to "1" the script will display all of the collected data being sent to InfluxDB
+#config_file_location="/volume1/web/config"																#where the configuration file will be saved. do not change value unless the value is also changed in the smart_config.php file
+#config_file_name="smart_logging_config.txt"															#name of config file, do not change value unless the value is also changed in the smart_config.php file
+#measurement="Dosk_SMART"																				#influxDB measurement name
+#nas_name="Server_Name"																					#name of server the SMART data is being collected from
+#use_sendmail=1																							#set to "1" to use "sendmail" command, set to "0" to use the "ssmtp" command when sending email notifications
 
 #########################################################
 #EMAIL SETTINGS USED IF CONFIGURATION FILE IS UNAVAILABLE
 #These variables will be overwritten with new corrected data if the configuration file loads properly. 
+#If the config file does not load properly, then the script will still be able to send alert emails informing the user the config file is missing/corrupted
 email_address="email@email.com"
 from_email_address="email@email.com"
 #########################################################
@@ -28,14 +33,14 @@ from_email_address="email@email.com"
 
 #for my personal use as i have multiple Synology systems, these lines can be deleted and the variables above can be un-commented
 ######################################################################################
-sever_type=2 #1=server2, 2=serverNVR, 3=serverplex
+sever_type=1 #1=server2, 2=serverNVR, 3=serverplex
 
 if [[ $sever_type == 1 ]]; then
 	config_file_location="/volume1/web/config/config_files/config_files_local"
 	config_file_name="smart_logging_config.txt"
 	measurement="synology_SMART_status2"
 	nas_name="Server2"
-	use_mail_plus_server=1
+	use_sendmail=1
 fi
 
 if [[ $sever_type == 2 ]]; then
@@ -43,7 +48,7 @@ if [[ $sever_type == 2 ]]; then
 	config_file_name="smart_logging_config.txt"
 	measurement="synology_SMART_status2"
 	nas_name="Server_NVR"
-	use_mail_plus_server=1
+	use_sendmail=1
 fi
 
 if [[ $sever_type == 3 ]]; then
@@ -51,7 +56,7 @@ if [[ $sever_type == 3 ]]; then
 	config_file_name="smart_logging_config.txt"
 	measurement="synology_SMART_status2"
 	nas_name="Server-Plex"
-	use_mail_plus_server=1
+	use_sendmail=1
 fi
 
 ######################################################################################
@@ -75,6 +80,7 @@ ping -c1 "google.com" > /dev/null #ping google.com
 		true
 	fi
 }
+	
 #########################################################
 #this function is used to send notifications
 #########################################################
@@ -85,7 +91,19 @@ function send_mail(){
 #email_contents_file=${4}				this file is where the contents of the email are saved prior to sending and it contains the log of the email transmission, either will indicated email sent successfully or will include the error details
 #error_message=${5}						this string of text is only displayed when the script is executed from the CLI, it will be part of the error message if the email is not sent correctly
 #email_interval=${6}					this numerical value will control how many minutes must pass before the next email is allowed to be sent
-#use_mail_plus_server=${7}				this will control if mail plus server (IE sendmail) or ssmtp will be used to send emails. ssmtp is much slower to execute but does not require the installation of mail plus server
+#use_sendmail=${7}						this will control if "sendmail" or "ssmtp" will be used to send emails.
+	#check to make sure the email address infomation is not blank
+	if [[ $from_email_address == "" || $email_address == "" ]]; then
+		echo "From / To email address information is blank, cannot send email notifications"
+		return
+	fi
+	
+	#make sure the email address at least contains an "@" symbol and a "." as email addresses must have those
+	if [[ $(echo "$email_address" | grep "@") == "" || $(echo "$from_email_address" | grep "@") == "" || $(echo "$from_email_address" | grep ".") == "" || $(echo "$email_address" | grep ".") == "" ]]; then
+		echo "From / To email address information is not an email address, cannot send email notifications"
+		return
+	fi
+	
 	local message_tracker=""
 	local time_diff=0
 	echo "${2}"
@@ -103,35 +121,33 @@ function send_mail(){
 		if [ $time_diff -ge ${6} ]; then
 			local now=$(date +"%T")
 			echo "the email has not been sent in over ${6} minutes, re-sending email"
-			if [[ ${7} == 1 ]]; then #if this is a value of 1, use mail plus
-				#verify MailPlus Server package is installed and running as the "sendmail" command is not installed in Synology by default. the MailPlus Server package is required
-				local install_check=$(/usr/syno/bin/synopkg list | grep MailPlus-Server)
-				if [ "$install_check" != "" ];then
-					#"MailPlus Server is installed, verify it is running and not stopped"
-					local status=$(/usr/syno/bin/synopkg is_onoff "MailPlus-Server")
-					if [ "$status" = "package MailPlus-Server is turned on" ]; then
-						echo "from: $from_email_address " > "${4}"
-						echo "to: $email_address " >> "${4}"
-						echo "subject: ${3}" >> "${4}"
-						echo "" >> "${4}"
-						echo "$now - ${2}" >> "${4}" #adding the mailbody text. 
-						local email_response=$(sendmail -t < "${4}"  2>&1)
-						if [[ "$email_response" == "" ]]; then
-							echo "" |& tee -a "${4}"
-							echo -e "Email to \"$email_address\" Sent Successfully\n" |& tee -a "${4}"
-							message_tracker=$current_time
-							time_diff=0
-							echo -n "$message_tracker" > "${1}"
-						else
-							echo -e "Warning, an error occurred while sending the ${5} notification email. the error was: $email_response\n" |& tee -a "${4}"
-						fi
-					else
-						echo -e "Warning Mail Plus Server is Installed but not running, unable to send email notification\n" |& tee -a "${4}"
-					fi
+			if [[ ${7} == 1 ]]; then #if this is a value of 1, use "sendmail" command
+				#verify the "sendmail" command is installed / available on the system
+				if ! command -v sendmail &> /dev/null; then
+					echo -e "\"sendmail\" command is not installed / available, unable to send email notification. Try using the \"ssmtp\" command\n" |& tee -a "${4}"
+					return
+				fi
+				echo "from: $from_email_address " > "${4}"
+				echo "to: $email_address " >> "${4}"
+				echo "subject: ${3}" >> "${4}"
+				echo "" >> "${4}"
+				echo "$now - ${2}" >> "${4}" #adding the mailbody text. 
+				local email_response=$(sendmail -t < "${4}"  2>&1)
+				if [[ "$email_response" == "" ]]; then
+					echo "" |& tee -a "${4}"
+					echo -e "Email to \"$email_address\" Sent Successfully\n" |& tee -a "${4}"
+					message_tracker=$current_time
+					time_diff=0
+					echo -n "$message_tracker" > "${1}"
 				else
-					echo -e "Mail Plus Server is not installed, unable to send email notification\n" |& tee -a "${4}"
+					echo -e "Warning, an error occurred while sending the ${5} notification email. the error was: $email_response\n" |& tee -a "${4}"
 				fi
 			else #since the value is not equal to 1, use ssmtp command
+				#verify the "ssmtp" command is installed / available on the system
+				if ! command -v ssmtp &> /dev/null; then
+					echo -e "\"ssmtp\" command is not installed / available, unable to send email notification. Try using the \"sendmail\" command\n" |& tee -a "${4}"
+					return
+				fi
 				echo "From: $from_email_address " > "${4}"
 				echo "Subject: ${3}" >> "${4}"
 				echo "" >> "${4}"
@@ -171,7 +187,7 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 	
 	#verify the correct number of configuration parameters are in the configuration file
 	if [[ ! ${#explode[@]} == 80 ]]; then
-		send_mail "$email_last_sent" "WARNING - the configuration file is incorrect or corrupted. It should have 80 parameters, it currently has ${#explode[@]} parameters." "Warning NAS \"$nas_name\" SNMP Monitoring Failed for script \"${0##*/}\" - Configuration file is incorrect" "$email_contents" "Config File Error" 60 $use_mail_plus_server
+		send_mail "$email_last_sent" "WARNING - the configuration file is incorrect or corrupted. It should have 80 parameters, it currently has ${#explode[@]} parameters." "Warning NAS \"$nas_name\" SNMP Monitoring Failed for script \"${0##*/}\" - Configuration file is incorrect" "$email_contents" "Config File Error" 60 $use_sendmail
 		exit 1
 	fi	
 	paramter_name=()
@@ -179,7 +195,6 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 	paramter_type=()
 	
 	#save the parameter values into the respective variable and remove the quotes
-	capture_interval=${explode[1]}
 	nas_url=${explode[2]}
 	influxdb_host=${explode[5]}
 	influxdb_port=${explode[6]}
@@ -187,8 +202,6 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 	influxdb_user=${explode[8]}
 	influxdb_pass=${explode[9]}
 	script_enable=${explode[10]}
-	AuthPass1=${explode[11]}
-	PrivPass2=${explode[12]}
 	influx_db_version=${explode[13]}
 	influxdb_org=${explode[14]}
 	enable_email_notifications=${explode[15]}
@@ -204,8 +217,6 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 	paramter_name+=(${explode[25]})
 	paramter_notification_threshold+=(${explode[26]})
 	from_email_address=${explode[27]}
-	snmp_auth_protocol=${explode[28]}
-	snmp_privacy_protocol=${explode[29]}
 	paramter_type+=(${explode[30]})
 	paramter_type+=(${explode[31]})
 	paramter_type+=(${explode[32]})
@@ -274,7 +285,7 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 		elif [[ ${#disk_list2_exploded[@]} > 0 ]]; then #if there are any /dev/sda named drives, loop through them
 			valid_array=("${disk_list2_exploded[@]}")
 		else
-			echo "No Valid Disks Found, Skipping Script"
+			echo "No Valid SATA Disks Found, Skipping Script"
 			exit 1
 		fi
 
@@ -305,7 +316,7 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 				disk_status=1
 			else
 				disk_status=0
-				send_mail "$email_last_sent" "Warning SMART disk $disk on $nas_name has either reported an error, or did not pass the last SMART test, review the latest SMART data for more details" "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_mail_plus_server
+				send_mail "$email_last_sent" "Warning SMART disk $disk on $nas_name has either reported an error, or did not pass the last SMART test, review the latest SMART data for more details" "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 			fi
 
 			#explode out the different items, separated by \n
@@ -333,15 +344,15 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 						if [[ "${exploded_data2[1]}" == "${paramter_name[$attribute_counter]}" ]]; then
 							if [[ ${paramter_type[$attribute_counter]} == ">" ]]; then
 								if [ ${exploded_data2[9]} -gt ${paramter_notification_threshold[$attribute_counter]} ]; then
-									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name has exceeded the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_mail_plus_server
+									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name has exceeded the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 								fi
 							elif [[ ${paramter_type[$attribute_counter]} == "=" ]]; then
 								if [ ${exploded_data2[9]} -eq ${paramter_notification_threshold[$attribute_counter]} ]; then
-									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_mail_plus_server
+									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 								fi
 							elif [[ ${paramter_type[$attribute_counter]} == "<" ]]; then
 								if [ ${exploded_data2[9]} -lt ${paramter_notification_threshold[$attribute_counter]} ]; then
-									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_mail_plus_server
+									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 								fi
 							fi
 						fi
@@ -393,15 +404,15 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 								if [[ $disk_SMART_attribute_name == ${paramter_name[$attribute_counter]} ]]; then
 									if [[ ${paramter_type[$attribute_counter]} == ">" ]]; then
 										if [ $disk_SMART_attribute_raw -gt ${paramter_notification_threshold[$attribute_counter]} ]; then
-											send_mail "$email_last_sent" "Warning SMART Attribute \"disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is greater than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_mail_plus_server
+											send_mail "$email_last_sent" "Warning SMART Attribute \"disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is greater than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 										fi
 									elif [[ ${paramter_type[$attribute_counter]} == "=" ]]; then
 										if [ $disk_SMART_attribute_raw -eq ${paramter_notification_threshold[$attribute_counter]} ]; then
-											send_mail "$email_last_sent" "Warning SMART Attribute \"disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_mail_plus_server
+											send_mail "$email_last_sent" "Warning SMART Attribute \"disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 										fi
 									elif [[ ${paramter_type[$attribute_counter]} == "<" ]]; then
 										if [ $disk_SMART_attribute_raw -lt ${paramter_notification_threshold[$attribute_counter]} ]; then
-											send_mail "$email_last_sent" "Warning SMART Attribute \"disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_mail_plus_server
+											send_mail "$email_last_sent" "Warning SMART Attribute \"disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 										fi
 									fi
 								fi
@@ -433,10 +444,10 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 		echo "script is disabled"
 	fi
 else
-	if [[ "$email_address" == "" || "$from_email_address" == "" ]];then
+	if [[ "$email_address" == "" || "$from_email_address" == "" || $(echo "$email_address" | grep "@") == "" || $(echo "$from_email_address" | grep "@") == "" || $(echo "$from_email_address" | grep ".") == "" || $(echo "$email_address" | grep ".") == "" ]];then
 		echo -e "\n\nNo email address information is configured, Cannot send an email indicating script \"${0##*/}\" config file is missing and script will not run"
 	else
-		send_mail "$email_last_sent" "Warning NAS \"$nas_name\" SMART Logging Failed for script \"${0##*/}\" - Configuration file is missing" "Warning NAS \"$nas_name_error\" SMART Data Collection Failed for script \"${0##*/}\" - Configuration file is missing" "$email_contents" "Config File Missing Alert" 60 $use_mail_plus_server
+		send_mail "$email_last_sent" "Warning NAS \"$nas_name\" SMART Logging Failed for script \"${0##*/}\" - Configuration file is missing" "Warning NAS \"$nas_name_error\" SMART Data Collection Failed for script \"${0##*/}\" - Configuration file is missing" "$email_contents" "Config File Missing Alert" 60 $use_sendmail
 	fi
 	exit 1
 fi
