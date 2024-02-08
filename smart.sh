@@ -1,5 +1,5 @@
 #!/bin/bash
-#Version 2/6/2026
+#Version 2/8/2026
 #By Brian Wallace
 #########################################################
 
@@ -285,8 +285,8 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 		elif [[ ${#disk_list2_exploded[@]} > 0 ]]; then #if there are any /dev/sda named drives, loop through them
 			valid_array=("${disk_list2_exploded[@]}")
 		else
-			echo "No Valid SATA Disks Found, Skipping Script"
-			exit 1
+			echo "No Valid SATA Disks Found"
+			valid_array=() #making empty array so we do not collect any data for SATA drives and try NVME drives next
 		fi
 
 		#now we can loop through all the available disks
