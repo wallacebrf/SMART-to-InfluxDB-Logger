@@ -1,5 +1,5 @@
 #!/bin/bash
-#Version 2/8/2026
+#Version 2/17/2026
 #By Brian Wallace
 #########################################################
 
@@ -106,7 +106,7 @@ function send_mail(){
 	
 	local message_tracker=""
 	local time_diff=0
-	echo "${2}"
+	echo -e "${2}"
 	echo ""
 	if check_internet; then
 		local current_time=$( date +%s )
@@ -131,7 +131,7 @@ function send_mail(){
 				echo "to: $email_address " >> "${4}"
 				echo "subject: ${3}" >> "${4}"
 				echo "" >> "${4}"
-				echo "$now - ${2}" >> "${4}" #adding the mailbody text. 
+				echo -e "$now - ${2}" >> "${4}" #adding the mailbody text. 
 				local email_response=$(sendmail -t < "${4}"  2>&1)
 				if [[ "$email_response" == "" ]]; then
 					echo "" |& tee -a "${4}"
@@ -285,8 +285,8 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 		elif [[ ${#disk_list2_exploded[@]} > 0 ]]; then #if there are any /dev/sda named drives, loop through them
 			valid_array=("${disk_list2_exploded[@]}")
 		else
-			echo "No Valid SATA Disks Found"
-			valid_array=() #making empty array so we do not collect any data for SATA drives and try NVME drives next
+			echo "No Valid SATA Disks Found, Skipping Script"
+			exit 1
 		fi
 
 		#now we can loop through all the available disks
@@ -299,6 +299,13 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 			disk=$(echo "${disk%:*}") 			#get rid of everything after the first colon which is after the name of the disk such as "/dev/sata1:"
 			
 			raw_data=$(smartctl -a -d ata $disk) #get all of the SMART data for the disk
+			
+			echo -e "\n\n"
+			if [[ "$(echo "$raw_data" | grep "synodrivedb")" != "" ]]; then
+				#echo -e "\n\nsmartctl command non-functional due to corrupt Synology drive database.\n\nThe Error Received was:\n\n $raw_data"
+				send_mail "$email_last_sent" "\"smartctl\" command non-functional due to corrupt Synology drive database.\n\nThe Error Received was:\n\n $raw_data" "\"smartctl\" command non-functional due to corrupt Synology drive database" "$email_contents" "SMART Alert" 60 $use_sendmail
+				exit 1
+			fi
 
 			data=$(echo "$raw_data" | awk '/ID# ATTRIBUTE_NAME/,/^$/') #list the table of attributes and their values, don't list anything else
 				
