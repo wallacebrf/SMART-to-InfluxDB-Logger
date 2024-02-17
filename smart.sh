@@ -286,7 +286,7 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 			valid_array=("${disk_list2_exploded[@]}")
 		else
 			echo "No Valid SATA Disks Found, Skipping Script"
-			exit 1
+			valid_array=() #making empty array so we do not collect any data for SATA drives and try NVME drives next
 		fi
 
 		#now we can loop through all the available disks
