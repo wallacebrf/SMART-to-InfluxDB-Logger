@@ -300,8 +300,8 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 			
 			raw_data=$(smartctl -a -d ata $disk) #get all of the SMART data for the disk
 			
-			echo -e "\n\n"
 			if [[ "$(echo "$raw_data" | grep "synodrivedb")" != "" ]]; then
+				echo -e "\n\n"
 				if [[ $enable_email_notifications == 1 ]]; then
 					send_mail "$email_last_sent" "\"smartctl\" command non-functional due to corrupt Synology drive database.\n\nThe Error Received was:\n\n $raw_data" "\"smartctl\" command non-functional due to corrupt Synology drive database" "$email_contents" "SMART Alert" 60 $use_sendmail
 				else
