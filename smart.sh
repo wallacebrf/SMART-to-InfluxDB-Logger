@@ -1,5 +1,5 @@
 #!/bin/bash
-#Version 2/17/2026
+#Version 12/31/2024
 #By Brian Wallace
 #########################################################
 
@@ -414,15 +414,15 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 								if [[ $disk_SMART_attribute_name == ${paramter_name[$attribute_counter]} ]]; then
 									if [[ ${paramter_type[$attribute_counter]} == ">" ]]; then
 										if [ $disk_SMART_attribute_raw -gt ${paramter_notification_threshold[$attribute_counter]} ]; then
-											send_mail "$email_last_sent" "Warning SMART Attribute \"disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is greater than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+											send_mail "$email_last_sent" "Warning SMART Attribute \"$disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is greater than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "/dev/nvme${c}n1 SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 										fi
 									elif [[ ${paramter_type[$attribute_counter]} == "=" ]]; then
 										if [ $disk_SMART_attribute_raw -eq ${paramter_notification_threshold[$attribute_counter]} ]; then
-											send_mail "$email_last_sent" "Warning SMART Attribute \"disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+											send_mail "$email_last_sent" "Warning SMART Attribute \"$disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "/dev/nvme${c}n1 SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 										fi
 									elif [[ ${paramter_type[$attribute_counter]} == "<" ]]; then
 										if [ $disk_SMART_attribute_raw -lt ${paramter_notification_threshold[$attribute_counter]} ]; then
-											send_mail "$email_last_sent" "Warning SMART Attribute \"disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+											send_mail "$email_last_sent" "Warning SMART Attribute \"$disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "/dev/nvme${c}n1 SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
 										fi
 									fi
 								fi
