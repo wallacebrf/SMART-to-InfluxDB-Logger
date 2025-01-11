@@ -11,7 +11,7 @@
 <h3 align="center">SATA and NVME Disk SMART Attribute Logger to InfluxDB</h3>
 
   <p align="center">
-    This project is comprised of a shell script that runs as often as desired (I recommend every 12 hours) collecting data from linux using the "smartctl" and "nvme smart-log" commands for all drives installed within the system and placing it into InfluxDB. This script will also send email notifications of up to 20x drive SMART parameters are either above, equal to, or below a value of your choice.
+    This project is comprised of a shell script that runs as often as desired (I recommend every 12 hours) collecting data from linux using the "smartctl" and "nvme smart-log" commands for all drives installed within the system (including USB drives) and placing it into InfluxDB. This script will also send email notifications of up to 20x drive SMART parameters are either above, equal to, or below a value of your choice.
     <br />
     <a href="https://github.com/wallacebrf/SMART-to-InfluxDB-Logger"><strong>Explore the docs »</strong></a>
     <br />
@@ -57,7 +57,7 @@
 
 <img src="https://raw.githubusercontent.com/wallacebrf/SMART-to-InfluxDB-Logger/main/images/smartscreen_HDD.png" alt="1313">
 
-The script collects Disk SMART details for SATA drives using the ```smartctl``` and ```nvme smart-log``` commands and saves data to InfluxDB. This script will also send email notifications for up to 20x drive SMART parameters that are either above, equal to, or below a configurable value in a basic web interface.  
+The script collects Disk SMART details for SATA drives and USB drives using the ```smartctl``` commands, and NVME drives using ```nvme smart-log``` commands. It saves the data to InfluxDB. This script will also send email notifications for up to 20x drive SMART parameters that are either above, equal to, or below a configurable value in a basic web interface.  
 
 <!-- GETTING STARTED -->
 ## Getting Started
