@@ -1,5 +1,7 @@
 #!/bin/bash
-#Version 12/31/2024
+# shellcheck disable=SC2162,SC2004,SC2129,SC2116,SC2321,SC2027,SC2086,SC2219
+#Version 1/11/2025
+#made updates to appease shell check
 #By Brian Wallace
 #########################################################
 
@@ -16,6 +18,7 @@ email_contents="/volume1/web/logging/notifications/SMART_Logging_email_contents.
 lock_file_location="/volume1/web/logging/notifications/SMART_Logging.lock"								#file created while the script is running and deleted when the script is done. this is to prevent more than one copy of the script from running at a time
 email_last_sent="/volume1/web/logging/notifications/${0##*/}_SMART_Logging_last_message_sent.txt"		#some emails are to be sent only every 60 minutes (like config file missing/corrupt messages) to prevent your inbox from being spammed
 debug=0																									#if set to "1" the script will display all of the collected data being sent to InfluxDB
+nas_name_error="Server2"																				#if the config file fails to load, this will ensure the script describes what system the email is from
 #config_file_location="/volume1/web/config"																#where the configuration file will be saved. do not change value unless the value is also changed in the smart_config.php file
 #config_file_name="smart_logging_config.txt"															#name of config file, do not change value unless the value is also changed in the smart_config.php file
 #measurement="Dosk_SMART"																				#influxDB measurement name
@@ -63,7 +66,7 @@ fi
 
 #create a lock file in the configuration directory to prevent more than one instance of this script from executing  at once
 if ! mkdir "$lock_file_location"; then
-	echo "Failed to acquire lock.\n" >&2
+	printf "Failed to acquire lock.\n" >&2
 	exit 1
 fi
 trap 'rm -rf "$lock_file_location"' EXIT #remove the lockdir on exit
@@ -109,7 +112,8 @@ function send_mail(){
 	echo -e "${2}"
 	echo ""
 	if check_internet; then
-		local current_time=$( date +%s )
+		local current_time
+		current_time=$( date +%s )
 		if [ -r "${1}" ]; then #file is available and readable 
 			read message_tracker < "${1}"
 			time_diff=$((( $current_time - $message_tracker ) / 60 ))
@@ -118,8 +122,9 @@ function send_mail(){
 			time_diff=$(( ${6} + 1 ))
 		fi
 				
-		if [ $time_diff -ge ${6} ]; then
-			local now=$(date +"%T")
+		if [ "$time_diff" -ge "${6}" ]; then
+			local now
+			now=$(date +"%T")
 			echo "the email has not been sent in over ${6} minutes, re-sending email"
 			if [[ ${7} == 1 ]]; then #if this is a value of 1, use "sendmail" command
 				#verify the "sendmail" command is installed / available on the system
@@ -132,7 +137,8 @@ function send_mail(){
 				echo "subject: ${3}" >> "${4}"
 				echo "" >> "${4}"
 				echo -e "$now - ${2}" >> "${4}" #adding the mailbody text. 
-				local email_response=$(sendmail -t < "${4}"  2>&1)
+				local email_response
+				email_response=$(sendmail -t < "${4}"  2>&1)
 				if [[ "$email_response" == "" ]]; then
 					echo "" |& tee -a "${4}"
 					echo -e "Email to \"$email_address\" Sent Successfully\n" |& tee -a "${4}"
@@ -154,13 +160,15 @@ function send_mail(){
 				echo -e "\n$now - ${2}\n" >> "${4}" #adding the mailbody text. 
 				
 				#the "ssmtp" command can only take one email address destination at a time. so if there are more than one email addresses in the list, we need to send them one at a time
-				address_explode=(`echo $email_address | sed 's/;/\n/g'`) #explode on the semicolon separating the different possible addresses
-				local xx=0
-				for xx in "${!address_explode[@]}"; do
-					local email_response=$(ssmtp ${address_explode[$xx]} < "${4}"  2>&1)
+				#address_explode=(`echo $email_address | sed 's/;/\n/g'`) #explode on the semicolon separating the different possible addresses
+				IFS=$';' read -d '' -r -a address_explode < "$email_address"
+				local bb=0
+				for bb in "${!address_explode[@]}"; do
+					local email_response
+					email_response=$(ssmtp "${address_explode[$bb]}" < "${4}"  2>&1)
 					if [[ "$email_response" == "" ]]; then
 						echo "" |& tee -a "${4}"
-						echo -e "Email to \"${address_explode[$xx]}\" Sent Successfully\n" |& tee -a "${4}"
+						echo -e "Email to \"${address_explode[$bb]}\" Sent Successfully\n" |& tee -a "${4}"
 						message_tracker=$current_time
 						time_diff=0
 						echo -n "$message_tracker" > "${1}"
@@ -180,14 +188,12 @@ function send_mail(){
 if [ -r "$config_file_location"/"$config_file_name" ]; then
 	#file is available and readable 
 	
-	#read in file
-	read input_read < "$config_file_location/$config_file_name"
-	#explode the configuration into an array with the colon as the delimiter
-	explode=(`echo $input_read | sed 's/,/\n/g'`)
+	#read in file, explode the configuration into an array with the colon as the delimiter
+	IFS=$',' read -d '' -r -a explode < "$config_file_location/$config_file_name"
 	
 	#verify the correct number of configuration parameters are in the configuration file
 	if [[ ! ${#explode[@]} == 80 ]]; then
-		send_mail "$email_last_sent" "WARNING - the configuration file is incorrect or corrupted. It should have 80 parameters, it currently has ${#explode[@]} parameters." "Warning NAS \"$nas_name\" SNMP Monitoring Failed for script \"${0##*/}\" - Configuration file is incorrect" "$email_contents" "Config File Error" 60 $use_sendmail
+		send_mail "$email_last_sent" "WARNING - the configuration file is incorrect or corrupted. It should have 80 parameters, it currently has ${#explode[@]} parameters." "Warning NAS \"$nas_name\" SNMP Monitoring Failed for script \"${0##*/}\" - Configuration file is incorrect" "$email_contents" "Config File Error" 60 "$use_sendmail"
 		exit 1
 	fi	
 	paramter_name=()
@@ -195,80 +201,79 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 	paramter_type=()
 	
 	#save the parameter values into the respective variable and remove the quotes
-	nas_url=${explode[2]}
-	influxdb_host=${explode[5]}
-	influxdb_port=${explode[6]}
-	influxdb_name=${explode[7]}
-	influxdb_user=${explode[8]}
-	influxdb_pass=${explode[9]}
-	script_enable=${explode[10]}
-	influx_db_version=${explode[13]}
-	influxdb_org=${explode[14]}
-	enable_email_notifications=${explode[15]}
-	email_address=${explode[16]}
-	paramter_name+=(${explode[17]})
-	paramter_notification_threshold+=(${explode[18]})
-	paramter_name+=(${explode[19]})
-	paramter_notification_threshold+=(${explode[20]})
-	paramter_name+=(${explode[21]})
-	paramter_notification_threshold+=(${explode[22]})
-	paramter_name+=(${explode[23]})
-	paramter_notification_threshold+=(${explode[24]})
-	paramter_name+=(${explode[25]})
-	paramter_notification_threshold+=(${explode[26]})
-	from_email_address=${explode[27]}
-	paramter_type+=(${explode[30]})
-	paramter_type+=(${explode[31]})
-	paramter_type+=(${explode[32]})
-	paramter_type+=(${explode[33]})
-	paramter_type+=(${explode[34]})
-	paramter_type+=(${explode[35]})
-	paramter_type+=(${explode[36]})
-	paramter_type+=(${explode[37]})
-	paramter_type+=(${explode[38]})
-	paramter_type+=(${explode[39]})
-	paramter_type+=(${explode[40]})
-	paramter_type+=(${explode[41]})
-	paramter_type+=(${explode[42]})
-	paramter_type+=(${explode[43]})
-	paramter_type+=(${explode[44]})
-	paramter_type+=(${explode[45]})
-	paramter_type+=(${explode[46]})
-	paramter_type+=(${explode[47]})
-	paramter_type+=(${explode[48]})
-	paramter_type+=(${explode[49]})
-	paramter_name+=(${explode[50]})
-	paramter_notification_threshold+=(${explode[51]})
-	paramter_name+=(${explode[52]})
-	paramter_notification_threshold+=(${explode[53]})
-	paramter_name+=(${explode[54]})
-	paramter_notification_threshold+=(${explode[55]})
-	paramter_name+=(${explode[56]})
-	paramter_notification_threshold+=(${explode[57]})
-	paramter_name+=(${explode[58]})
-	paramter_notification_threshold+=(${explode[59]})
-	paramter_name+=(${explode[60]})
-	paramter_notification_threshold+=(${explode[61]})
-	paramter_name+=(${explode[62]})
-	paramter_notification_threshold+=(${explode[63]})
-	paramter_name+=(${explode[64]})
-	paramter_notification_threshold+=(${explode[65]})
-	paramter_name+=(${explode[66]})
-	paramter_notification_threshold+=(${explode[67]})
-	paramter_name+=(${explode[68]})
-	paramter_notification_threshold+=(${explode[69]})
-	paramter_name+=(${explode[70]})
-	paramter_notification_threshold+=(${explode[71]})
-	paramter_name+=(${explode[72]})
-	paramter_notification_threshold+=(${explode[73]})
-	paramter_name+=(${explode[74]})
-	paramter_notification_threshold+=(${explode[75]})
-	paramter_name+=(${explode[76]})
-	paramter_notification_threshold+=(${explode[77]})
-	paramter_name+=(${explode[78]})
-	paramter_notification_threshold+=(${explode[79]})
+	influxdb_host="${explode[5]}"
+	influxdb_port="${explode[6]}"
+	influxdb_name="${explode[7]}"
+	influxdb_user="${explode[8]}"
+	influxdb_pass="${explode[9]}"
+	script_enable="${explode[10]}"
+	influx_db_version="${explode[13]}"
+	influxdb_org="${explode[14]}"
+	enable_email_notifications="${explode[15]}"
+	email_address="${explode[16]}"
+	paramter_name+=("${explode[17]}")
+	paramter_notification_threshold+=("${explode[18]}")
+	paramter_name+=("${explode[19]}")
+	paramter_notification_threshold+=("${explode[20]}")
+	paramter_name+=("${explode[21]}")
+	paramter_notification_threshold+=("${explode[22]}")
+	paramter_name+=("${explode[23]}")
+	paramter_notification_threshold+=("${explode[24]}")
+	paramter_name+=("${explode[25]}")
+	paramter_notification_threshold+=("${explode[26]}")
+	from_email_address="${explode[27]}"
+	paramter_type+=("${explode[30]}")
+	paramter_type+=("${explode[31]}")
+	paramter_type+=("${explode[32]}")
+	paramter_type+=("${explode[33]}")
+	paramter_type+=("${explode[34]}")
+	paramter_type+=("${explode[35]}")
+	paramter_type+=("${explode[36]}")
+	paramter_type+=("${explode[37]}")
+	paramter_type+=("${explode[38]}")
+	paramter_type+=("${explode[39]}")
+	paramter_type+=("${explode[40]}")
+	paramter_type+=("${explode[41]}")
+	paramter_type+=("${explode[42]}")
+	paramter_type+=("${explode[43]}")
+	paramter_type+=("${explode[44]}")
+	paramter_type+=("${explode[45]}")
+	paramter_type+=("${explode[46]}")
+	paramter_type+=("${explode[47]}")
+	paramter_type+=("${explode[48]}")
+	paramter_type+=("${explode[49]}")
+	paramter_name+=("${explode[50]}")
+	paramter_notification_threshold+=("${explode[51]}")
+	paramter_name+=("${explode[52]}")
+	paramter_notification_threshold+=("${explode[53]}")
+	paramter_name+=("${explode[54]}")
+	paramter_notification_threshold+=("${explode[55]}")
+	paramter_name+=("${explode[56]}")
+	paramter_notification_threshold+=("${explode[57]}")
+	paramter_name+=("${explode[58]}")
+	paramter_notification_threshold+=("${explode[59]}")
+	paramter_name+=("${explode[60]}")
+	paramter_notification_threshold+=("${explode[61]}")
+	paramter_name+=("${explode[62]}")
+	paramter_notification_threshold+=("${explode[63]}")
+	paramter_name+=("${explode[64]}")
+	paramter_notification_threshold+=("${explode[65]}")
+	paramter_name+=("${explode[66]}")
+	paramter_notification_threshold+=("${explode[67]}")
+	paramter_name+=("${explode[68]}")
+	paramter_notification_threshold+=("${explode[69]}")
+	paramter_name+=("${explode[70]}")
+	paramter_notification_threshold+=("${explode[71]}")
+	paramter_name+=("${explode[72]}")
+	paramter_notification_threshold+=("${explode[73]}")
+	paramter_name+=("${explode[74]}")
+	paramter_notification_threshold+=("${explode[75]}")
+	paramter_name+=("${explode[76]}")
+	paramter_notification_threshold+=("${explode[77]}")
+	paramter_name+=("${explode[78]}")
+	paramter_notification_threshold+=("${explode[79]}")
 
-	if [ $script_enable -eq 1 ]; then
+	if [ "$script_enable" -eq 1 ]; then
 		post_url=""
 
 		disk_list1=$(fdisk -l | grep "Disk /dev/sata*[0-9]:")   #some systems have drives listed as /stata1, /sata2 etc
@@ -280,9 +285,9 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 
 
 		#we will need to loop through the disks to get all of the SMART data we are after, but we need to determine which disk naming convention is being used by the system
-		if [[ ${#disk_list1_exploded[@]} > 0 ]]; then #if there are any /dev/sata named drives, loop through them
+		if [[ "${#disk_list1_exploded[@]}" -gt 0 ]]; then #if there are any /dev/sata named drives, loop through them
 			valid_array=("${disk_list1_exploded[@]}") 
-		elif [[ ${#disk_list2_exploded[@]} > 0 ]]; then #if there are any /dev/sda named drives, loop through them
+		elif [[ "${#disk_list2_exploded[@]}" -gt 0 ]]; then #if there are any /dev/sda named drives, loop through them
 			valid_array=("${disk_list2_exploded[@]}")
 		else
 			echo "No Valid SATA Disks Found, Skipping Script"
@@ -298,12 +303,12 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 			disk=$(echo "${disk##*Disk }") 		#get rid of "Disk " at the beginning of the string
 			disk=$(echo "${disk%:*}") 			#get rid of everything after the first colon which is after the name of the disk such as "/dev/sata1:"
 			
-			raw_data=$(smartctl -a -d ata $disk) #get all of the SMART data for the disk
+			raw_data=$(smartctl -a -d ata "$disk") #get all of the SMART data for the disk
 			
 			if [[ "$(echo "$raw_data" | grep "synodrivedb")" != "" ]]; then
 				echo -e "\n\n"
 				if [[ $enable_email_notifications == 1 ]]; then
-					send_mail "$email_last_sent" "\"smartctl\" command non-functional due to corrupt Synology drive database.\n\nThe Error Received was:\n\n $raw_data" "\"smartctl\" command non-functional due to corrupt Synology drive database" "$email_contents" "SMART Alert" 60 $use_sendmail
+					send_mail "$email_last_sent" "\"smartctl\" command non-functional due to corrupt Synology drive database.\n\nThe Error Received was:\n\n $raw_data" "\"smartctl\" command non-functional due to corrupt Synology drive database" "$email_contents" "SMART Alert" 60 "$use_sendmail"
 				else
 					echo -e "\"smartctl\" command non-functional due to corrupt Synology drive database.\n\nThe Error Received was:\n\n $raw_data"
 				fi
@@ -326,17 +331,17 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 				disk_status=1
 			else
 				disk_status=0
-				send_mail "$email_last_sent" "Warning SMART disk $disk on $nas_name has either reported an error, or did not pass the last SMART test, review the latest SMART data for more details" "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+				send_mail "$email_last_sent" "Warning SMART disk $disk on $nas_name has either reported an error, or did not pass the last SMART test, review the latest SMART data for more details" "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
 			fi
 
 			#explode out the different items, separated by \n
 			IFS=$'\n' read -rd '' -a exploded_data <<<"$data"
 				
 			#we now need to loop through all of the different parameters this particular disk's SMART data returns	
-			xx=0
-			for xx in "${!exploded_data[@]}"; do
+			yy=0
+			for yy in "${!exploded_data[@]}"; do
 				#explode out the different items, separated by " "
-				IFS=$' ' read -rd '' -a exploded_data2 <<<"${exploded_data[$xx]}"
+				IFS=$' ' read -rd '' -a exploded_data2 <<<"${exploded_data[$yy]}"
 
 				#have to remove the new line at the end of the last entry of the array
 				name=${exploded_data2[$(( ${#exploded_data2[@]} - 1 ))]} 					#get the last value of the last entry in the array
@@ -352,17 +357,17 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 					for attribute_counter in "${!paramter_name[@]}" 
 					do
 						if [[ "${exploded_data2[1]}" == "${paramter_name[$attribute_counter]}" ]]; then
-							if [[ ${paramter_type[$attribute_counter]} == ">" ]]; then
-								if [ ${exploded_data2[9]} -gt ${paramter_notification_threshold[$attribute_counter]} ]; then
-									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name has exceeded the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+							if [[ "${paramter_type[$attribute_counter]}" == ">" ]]; then
+								if [ "${exploded_data2[9]}" -gt "${paramter_notification_threshold[$attribute_counter]}" ]; then
+									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name has exceeded the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
 								fi
-							elif [[ ${paramter_type[$attribute_counter]} == "=" ]]; then
-								if [ ${exploded_data2[9]} -eq ${paramter_notification_threshold[$attribute_counter]} ]; then
-									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+							elif [[ "${paramter_type[$attribute_counter]}" == "=" ]]; then
+								if [ "${exploded_data2[9]}" -eq "${paramter_notification_threshold[$attribute_counter]}" ]; then
+									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
 								fi
-							elif [[ ${paramter_type[$attribute_counter]} == "<" ]]; then
-								if [ ${exploded_data2[9]} -lt ${paramter_notification_threshold[$attribute_counter]} ]; then
-									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+							elif [[ "${paramter_type[$attribute_counter]}" == "<" ]]; then
+								if [ "${exploded_data2[9]}" -lt "${paramter_notification_threshold[$attribute_counter]}" ]; then
+									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
 								fi
 							fi
 						fi
@@ -379,7 +384,7 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 			echo "nvme_number_installed is $nvme_number_installed"
 		fi
 
-		if [[ $nvme_number_installed < 1 ]]; then
+		if [[ $nvme_number_installed -lt 1 ]]; then
 			echo "no NVME drives installed, skipping NVME capture"
 		else
 			for (( c=0; c<$nvme_number_installed; c++ ))
@@ -411,18 +416,18 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 						if [[ $enable_email_notifications == 1 ]]; then
 							for attribute_counter in "${!paramter_name[@]}" 
 							do
-								if [[ $disk_SMART_attribute_name == ${paramter_name[$attribute_counter]} ]]; then
-									if [[ ${paramter_type[$attribute_counter]} == ">" ]]; then
-										if [ $disk_SMART_attribute_raw -gt ${paramter_notification_threshold[$attribute_counter]} ]; then
-											send_mail "$email_last_sent" "Warning SMART Attribute \"$disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is greater than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "/dev/nvme${c}n1 SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+								if [[ "$disk_SMART_attribute_name" == "${paramter_name[$attribute_counter]}" ]]; then
+									if [[ "${paramter_type[$attribute_counter]}" == ">" ]]; then
+										if [ "$disk_SMART_attribute_raw" -gt "${paramter_notification_threshold[$attribute_counter]}" ]; then
+											send_mail "$email_last_sent" "Warning SMART Attribute \"$disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is greater than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "/dev/nvme${c}n1 SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
 										fi
-									elif [[ ${paramter_type[$attribute_counter]} == "=" ]]; then
-										if [ $disk_SMART_attribute_raw -eq ${paramter_notification_threshold[$attribute_counter]} ]; then
-											send_mail "$email_last_sent" "Warning SMART Attribute \"$disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "/dev/nvme${c}n1 SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+									elif [[ "${paramter_type[$attribute_counter]}" == "=" ]]; then
+										if [ "$disk_SMART_attribute_raw" -eq "${paramter_notification_threshold[$attribute_counter]}" ]; then
+											send_mail "$email_last_sent" "Warning SMART Attribute \"$disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "/dev/nvme${c}n1 SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
 										fi
-									elif [[ ${paramter_type[$attribute_counter]} == "<" ]]; then
-										if [ $disk_SMART_attribute_raw -lt ${paramter_notification_threshold[$attribute_counter]} ]; then
-											send_mail "$email_last_sent" "Warning SMART Attribute \"$disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "/dev/nvme${c}n1 SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 $use_sendmail
+									elif [[ "${paramter_type[$attribute_counter]}" == "<" ]]; then
+										if [ "$disk_SMART_attribute_raw" -lt "${paramter_notification_threshold[$attribute_counter]}" ]; then
+											send_mail "$email_last_sent" "Warning SMART Attribute \"$disk_SMART_attribute_name\" on disk /dev/nvme${c}n1 on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of $disk_SMART_attribute_raw." "/dev/nvme${c}n1 SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
 										fi
 									fi
 								fi
@@ -457,7 +462,7 @@ else
 	if [[ "$email_address" == "" || "$from_email_address" == "" || $(echo "$email_address" | grep "@") == "" || $(echo "$from_email_address" | grep "@") == "" || $(echo "$from_email_address" | grep ".") == "" || $(echo "$email_address" | grep ".") == "" ]];then
 		echo -e "\n\nNo email address information is configured, Cannot send an email indicating script \"${0##*/}\" config file is missing and script will not run"
 	else
-		send_mail "$email_last_sent" "Warning NAS \"$nas_name\" SMART Logging Failed for script \"${0##*/}\" - Configuration file is missing" "Warning NAS \"$nas_name_error\" SMART Data Collection Failed for script \"${0##*/}\" - Configuration file is missing" "$email_contents" "Config File Missing Alert" 60 $use_sendmail
+		send_mail "$email_last_sent" "Warning NAS \"$nas_name\" SMART Logging Failed for script \"${0##*/}\" - Configuration file is missing" "Warning NAS \"$nas_name_error\" SMART Data Collection Failed for script \"${0##*/}\" - Configuration file is missing" "$email_contents" "Config File Missing Alert" 60 "$use_sendmail"
 	fi
 	exit 1
 fi
