@@ -83,6 +83,38 @@ ping -c1 "google.com" > /dev/null #ping google.com
 		true
 	fi
 }
+
+##################################################################################################################
+#Flash drive check Function
+#By Dave Russell "007revad"
+##################################################################################################################
+# shellcheck disable=SC2005 #don't complain about useless cat in this function
+function not_flash_drive(){
+	# $1 is /dev/sata1 /dev/usb1 etc
+	# Check if drive is flash drive (not supported by smartctl)
+	local removable
+	local capability
+	local device
+	device=$(echo "$(basename "$1")" | cut -d":" -f1)
+	removable=$(cat "/sys/block/$device/removable")
+	capability=$(cat "/sys/block/$device/capability")
+	if [[ $removable == "1" ]] && [[ $capability == "51" ]]; then
+		return 1
+	fi
+}
+
+##################################################################################################################
+#USB drive check Function
+#By Dave Russell "007revad"
+##################################################################################################################
+function is_usb(){
+    # $1 is /dev/sda etc
+    if realpath /sys/block/"$(basename "$1")" | grep -q usb; then
+        return 0
+    else
+        return 1
+    fi
+}
 	
 #########################################################
 #this function is used to send notifications
@@ -276,22 +308,49 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 	if [ "$script_enable" -eq 1 ]; then
 		post_url=""
 
-		disk_list1=$(fdisk -l | grep "Disk /dev/sata*[0-9]:")   #some systems have drives listed as /stata1, /sata2 etc
-		disk_list2=$(fdisk -l | grep "Disk /dev/sd")			#some systems have drives listed as /sda, /sdb etc
+		##################################################################################################################
+		#Get listing of all installed SATA drives in the system
+		##################################################################################################################
+		disk_list1=$(fdisk -l 2>/dev/null | grep -E "Disk /dev/(sata|sas)*[0-9]:")	#some systems have drives listed as /stata1, /sata2, /sas1 etc
+		disk_list2=$(fdisk -l 2>/dev/null | grep -E "Disk /dev/(sd|hd)")			#some systems have drives listed as /sda, /sdb, /hda etc
+		disk_list3=$(fdisk -l 2>/dev/null | grep "Disk /dev/usb")					#usb drives
 
 		IFS=$'\n' read -rd '' -a disk_list1_exploded <<<"$disk_list1"	#create an array of the dev/sata results if they exist
 
-		IFS=$'\n' read -rd '' -a disk_list2_exploded <<<"$disk_list2"	#create an array of the dev/sda results if they exist
+		IFS=$'\n' read -rd '' -a tmp_disk_list2_exploded <<<"$disk_list2"	#create an array of the dev/sda results if they exist
 
+		IFS=$'\n' read -rd '' -a disk_list3_exploded <<<"$disk_list3"	#create an array of the dev/usb results if they exist
+
+
+		#add usb drives to disk_list1_exploded or disk_list2_exploded
+		if [[ ${#disk_list1_exploded[@]} -gt "0" ]]; then		#/dev/sata* and /dev/sas*
+			for usb_disk in "${disk_list3_exploded[@]}"; do
+				if not_flash_drive "$usb_disk"; then			#skip flash drives
+					disk_list1_exploded+=("$usb_disk")
+				fi
+			done
+		elif [[ ${#tmp_disk_list2_exploded[@]} -gt "0" ]]; then		#/dev/sd* and /dev/hd*
+			for tmp_disk in "${tmp_disk_list2_exploded[@]}"; do
+				tmp="$(echo "$(basename "$tmp_disk")" | cut -d":" -f1)"
+				if is_usb "$tmp"; then		#add USB drives except flash drives
+					if not_flash_drive "$tmp"; then
+						disk_list2_exploded+=("$tmp_disk")
+					fi
+				else
+					disk_list2_exploded+=("$tmp_disk")				#add all other drives
+				fi
+			done
+		fi
 
 		#we will need to loop through the disks to get all of the SMART data we are after, but we need to determine which disk naming convention is being used by the system
-		if [[ "${#disk_list1_exploded[@]}" -gt 0 ]]; then #if there are any /dev/sata named drives, loop through them
+		if [[ ${#disk_list1_exploded[@]} -gt 0 ]]; then #if there are any /dev/sata named drives, loop through them
 			valid_array=("${disk_list1_exploded[@]}") 
-		elif [[ "${#disk_list2_exploded[@]}" -gt 0 ]]; then #if there are any /dev/sda named drives, loop through them
+		elif [[ ${#disk_list2_exploded[@]} -gt 0 ]]; then #if there are any /dev/sda named drives, loop through them
 			valid_array=("${disk_list2_exploded[@]}")
 		else
-			echo "No Valid SATA Disks Found, Skipping Script"
+			echo "No Valid SATA or USB Disks Found, Skipping Script"
 			valid_array=() #making empty array so we do not collect any data for SATA drives and try NVME drives next
+			exit 1
 		fi
 
 		#now we can loop through all the available disks
