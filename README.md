@@ -133,6 +133,8 @@ For ```nas_name="Server_Name"``` change to a value of your choice to describe th
 
 For ```use_sendmail=1``` set to a value of 1 to use "sendmail" command and set to a value of 0 to use the "ssmtp" command to send email notifications, set to a value of 2 if using TrueNAS. This will also reqire the use of the `multireport_sendemail.py` file in order to send emails using TrueNAS
 
+for ```synology=0``` only set to a value of 1 if installing this script on a synology NAS
+
 For the ```EMAIL SETTINGS USED IF CONFIGURATION FILE IS UNAVAILABLE``` settings, configure the email address details as desired.
 
 
