@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 # shellcheck disable=SC2162,SC2004,SC2129,SC2116,SC2321,SC2027,SC2086,SC2219
-#Version 1/11/2025
+#Version 5/10/2025
 #made updates to appease shell check
 #By Brian Wallace
 #########################################################
@@ -14,29 +14,30 @@ fi
 
 #########################################################
 #USER ADJUSABLE SCRIPT VARIABLES
-email_contents="/volume1/web/logging/notifications/SMART_Logging_email_contents.txt"					#when email notifications are sent, the contents of the email and a log entry if the email successfully sent is saved to this file
-lock_file_location="/volume1/web/logging/notifications/SMART_Logging.lock"								#file created while the script is running and deleted when the script is done. this is to prevent more than one copy of the script from running at a time
-email_last_sent="/volume1/web/logging/notifications/${0##*/}_SMART_Logging_last_message_sent.txt"		#some emails are to be sent only every 60 minutes (like config file missing/corrupt messages) to prevent your inbox from being spammed
+email_contents="/mnt/volume1/web/logging/notifications/SMART_Logging_email_contents.txt"					#when email notifications are sent, the contents of the email and a log entry if the email successfully sent is saved to this file
+lock_file_location="/mnt/volume1/web/logging/notifications/SMART_Logging.lock"								#file created while the script is running and deleted when the script is done. this is to prevent more than one copy of the script from running at a time
+email_last_sent="/mnt/volume1/web/logging/notifications/${0##*/}_SMART_Logging_last_message_sent.txt"		#some emails are to be sent only every 60 minutes (like config file missing/corrupt messages) to prevent your inbox from being spammed
 debug=0																									#if set to "1" the script will display all of the collected data being sent to InfluxDB
-nas_name_error="Server2"																				#if the config file fails to load, this will ensure the script describes what system the email is from
-#config_file_location="/volume1/web/config"																#where the configuration file will be saved. do not change value unless the value is also changed in the smart_config.php file
+nas_name_error="TrueNAS"	
+synology=0																			#if the config file fails to load, this will ensure the script describes what system the email is from
+#config_file_location="/mnt/volume1/web/config"																#where the configuration file will be saved. do not change value unless the value is also changed in the smart_config.php file
 #config_file_name="smart_logging_config.txt"															#name of config file, do not change value unless the value is also changed in the smart_config.php file
 #measurement="Dosk_SMART"																				#influxDB measurement name
 #nas_name="Server_Name"																					#name of server the SMART data is being collected from
-#use_sendmail=1																							#set to "1" to use "sendmail" command, set to "0" to use the "ssmtp" command when sending email notifications
+#use_sendmail=1																							#set to "1" to use "sendmail" command, set to "0" to use the "ssmtp" command when sending email notifications, set to "2" if using trueNAS
 
 #########################################################
 #EMAIL SETTINGS USED IF CONFIGURATION FILE IS UNAVAILABLE
 #These variables will be overwritten with new corrected data if the configuration file loads properly. 
 #If the config file does not load properly, then the script will still be able to send alert emails informing the user the config file is missing/corrupted
-email_address="wallacebrf@hotmail.com;8477540994@txt.att.net"
-from_email_address="admin@wallacebrf.us"
+email_address="email@email.com"
+from_email_address="email@email.com"
 #########################################################
 
 
 #for my personal use as i have multiple Synology systems, these lines can be deleted and the variables above can be un-commented
 ######################################################################################
-sever_type=1 #1=server2, 2=serverNVR, 3=serverplex
+sever_type=4 #1=server2, 2=serverNVR, 3=serverplex, 4=TrueNAS
 
 if [[ $sever_type == 1 ]]; then
 	config_file_location="/volume1/web/config/config_files/config_files_local"
@@ -62,6 +63,14 @@ if [[ $sever_type == 3 ]]; then
 	use_sendmail=1
 fi
 
+if [[ $sever_type == 4 ]]; then
+	config_file_location="/mnt/volume1/web/config"
+	config_file_name="smart_logging_config.txt"
+	measurement="TrueNAS_SMART_status"
+	nas_name="TrueNAS"
+	use_sendmail=2  #use TrueNAS
+fi
+
 ######################################################################################
 
 #create a lock file in the configuration directory to prevent more than one instance of this script from executing  at once
@@ -75,13 +84,17 @@ trap 'rm -rf "$lock_file_location"' EXIT #remove the lockdir on exit
 #this function pings google.com to confirm internet access is working prior to sending email notifications 
 #########################################################
 check_internet() {
-ping -c1 "google.com" > /dev/null #ping google.com									
-	local status=$?
-	if ! (exit $status); then
-		false
-	else
-		true
-	fi
+if [[ $synology != 0 ]]; then
+	ping -c1 "google.com" > /dev/null #ping google.com									
+		local status=$?
+		if ! (exit $status); then
+			false
+		else
+			true
+		fi
+else
+	true
+fi
 }
 
 ##################################################################################################################
@@ -180,6 +193,15 @@ function send_mail(){
 				else
 					echo -e "Warning, an error occurred while sending the ${5} notification email. the error was: $email_response\n" |& tee -a "${4}"
 				fi
+			elif [[ ${7} == 2 ]]; then #if this is a value of 1, use TrueNAS commands
+				#https://github.com/oxyde1989/standalone-tn-send-email/tree/main
+				
+				#the command can only take one email address destination at a time. so if there are more than one email addresses in the list, we need to send them one at a time
+				address_explode=(`echo "$email_address" | sed 's/;/\n/g'`)
+				local bb=0
+				for bb in "${!address_explode[@]}"; do
+					python3 /mnt/volume1/web/logging/multireport_sendemail.py --subject "${3}" --to_address "${address_explode[$bb]}" --mail_body_html "$now - ${2}" --override_fromemail "$from_email_address"
+				done
 			else #since the value is not equal to 1, use ssmtp command
 				#verify the "ssmtp" command is installed / available on the system
 				if ! command -v ssmtp &> /dev/null; then
@@ -437,8 +459,10 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 		
 		
 		#get NVME drive details. as this is not available from SNMP, we will pull it using the nvme command. 
-		nvme_number_installed=$(nvme list | wc -l)
-		nvme_number_installed=$(( ( $nvme_number_installed - 2 ) / 2 )) #remove the first two lines as they are just table header information, and two entries are listed per drive
+		nvme_number_installed=$(nvme list | grep "/dev" | wc -l)
+		if [[ $synology -eq 1 ]]; then
+			nvme_number_installed=$(( $nvme_number_installed / 2 )) #two entries are listed per drive for synology, one the disk, one the partiotion on the disk
+		fi
 		if [[ $debug == 1 ]]; then
 			echo "nvme_number_installed is $nvme_number_installed"
 		fi
@@ -467,9 +491,11 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 						disk_SMART_attribute_raw=${disk_SMART_attribute_raw//\,/$secondString} #remove the commas from numerical values so it is just a plain number and not a string
 						disk_SMART_attribute_raw=${disk_SMART_attribute_raw//\%/$secondString} #remove the % symbol from items containing it so it is just a plain number and not a string
 						disk_SMART_attribute_raw=${disk_SMART_attribute_raw//\C/$secondString} #remove the "C" from temperature values so it is just a plain number and not a string
+						disk_SMART_attribute_raw=$(echo "${disk_SMART_attribute_raw%°*}") #remove "°(xxKelvin)" from temperatures
+						disk_SMART_attribute_raw=$(echo "${disk_SMART_attribute_raw%(*}") #remove from data written "(xxTB)"
+
 					
 						post_url=$post_url"$disk_SMART_attribute_name=$disk_SMART_attribute_raw,"
-							
 							
 						#are email notifications enabled?
 						if [[ $enable_email_notifications == 1 ]]; then
