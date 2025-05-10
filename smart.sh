@@ -29,8 +29,8 @@ nas_name_error="Server2"																				#if the config file fails to load, t
 #EMAIL SETTINGS USED IF CONFIGURATION FILE IS UNAVAILABLE
 #These variables will be overwritten with new corrected data if the configuration file loads properly. 
 #If the config file does not load properly, then the script will still be able to send alert emails informing the user the config file is missing/corrupted
-email_address="email@email.com"
-from_email_address="email@email.com"
+email_address="wallacebrf@hotmail.com;8477540994@txt.att.net"
+from_email_address="admin@wallacebrf.us"
 #########################################################
 
 
