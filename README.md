@@ -86,13 +86,13 @@ note: ```%PHP_Server_Root%``` is what ever shared folder location the PHP web se
 
 2. Place the ```functions.php``` file in the root of the PHP web server running on the such as ```/volume1/web```
 
-3. Place the ```smart.sh``` file in the ```/logging``` directory
+3. Place the ```smart_logger.sh``` file in the ```/logging``` directory
 
 4. Place the ```smart_config.php``` file in the ```/config``` directory
 
-### Configuration "smart.sh"
+### Configuration "smart_logger.sh"
 
-1. Open the ```smart.sh``` file in a text editor. I suggest Notepad++
+1. Open the ```smart_logger.sh``` file in a text editor. I suggest Notepad++
 2. the script contains the following configuration variables. un-comment the five lines below ```debug=0```
 ```
 #########################################################
@@ -107,6 +107,7 @@ debug=0
 #measurement="Disk_SMART"
 #nas_name="Server_Name"
 #use_sendmail=1
+synology=0	
 
 #########################################################
 #EMAIL SETTINGS USED IF CONFIGURATION FILE IS UNAVAILABLE
@@ -130,7 +131,7 @@ For ```#measurement="Disk_SMART"``` change the value to the desired InfluxDB mea
 
 For ```nas_name="Server_Name"``` change to a value of your choice to describe the name of the system SMART data is being collected from
 
-For ```use_sendmail=1``` set to a value of 1 to use "sendmail" command and set to a value of 0 to use the "ssmtp" command to send email notifications 
+For ```use_sendmail=1``` set to a value of 1 to use "sendmail" command and set to a value of 0 to use the "ssmtp" command to send email notifications, set to a value of 2 if using TrueNAS. This will also reqire the use of the `multireport_sendemail.py` file in order to send emails using TrueNAS
 
 For the ```EMAIL SETTINGS USED IF CONFIGURATION FILE IS UNAVAILABLE``` settings, configure the email address details as desired.
 
@@ -165,9 +166,22 @@ if [[ $sever_type == 3 ]]; then
 	use_sendmail=1
 fi
 
+if [[ $sever_type == 4 ]]; then
+	config_file_location="/mnt/volume1/web/config"
+	config_file_name="smart_logging_config.txt"
+	measurement="TrueNAS_SMART_status"
+	nas_name="TrueNAS"
+	use_sendmail=2  #use TrueNAS
+fi
+
 ######################################################################################
 ```
 
+if using TrueNAS, find the following line
+
+`python3 /mnt/volume1/web/logging/multireport_sendemail.py --subject "${3}" --to_address "${address_explode[$bb]}" --mail_body_html "$now - ${2}" --override_fromemail "$from_email_address"`
+
+and ensure the `/mnt/volume1/web/logging` path is corected to where the `multireport_sendemail.py` file is located on your system
 
 ### Configuration "smart_config.php"
 
@@ -180,7 +194,7 @@ $form_submittal_destination="index.php?page=6&config_page=smart_server2"; //set 
 $page_title="Server2 SMART Logging and Notification Configuration Settings";
 ```
 
-ENSURE THE VALUES FOR ```$config_file``` ARE THE SAME AS THAT CONFIGURED IN [Configuration "ssmart.sh"] FOR THE VARIABLE ```config_file_location```
+ENSURE THE VALUES FOR ```$config_file``` ARE THE SAME AS THAT CONFIGURED IN [Configuration "ssmart_logger.sh"] FOR THE VARIABLE ```config_file_location```
 
 The ```form_submittal_destination``` can either be set to the name of the "smart_config.php" file itself if accessing the php file directly in the browser address bar, or if the "smart_config.php" file is embedded in another PHP file using an "include_once" then the location should be to that php file as the included example currently shows. 
 
@@ -223,16 +237,16 @@ By default the Synology user "http" utilized by web station does not have write 
 
 5. Configure the SMART notification settings. NOTE: these settings will need to be changed after the script is run for the first time. This is due to every drive using different SMART parameter names. The parameter names entered into the configuration page will need to match what is gathered from your system. 
 
-### Test running the ```smart.sh``` file for the first time
+### Test running the ```smart_logger.sh``` file for the first time
 
 Now that the required configuration files are made using the web-interface, we can ensure the bash script operates correctly. 
 
-1. Open the ```smart.sh``` file for editing. Find the line ```debug=0``` and change to ```debug=1``` to enable verbose output to assist with debugging
-2. Open SSH and navigate to where the ```smart.sh``` file is located. Type the following command ```bash smart.sh``` and press enter
+1. Open the ```smart_logger.sh``` file for editing. Find the line ```debug=0``` and change to ```debug=1``` to enable verbose output to assist with debugging
+2. Open SSH and navigate to where the ```smart_logger.sh``` file is located. Type the following command ```bash smart_logger.sh``` and press enter
 3. The script will run and load all of the configuration settings. In debug mode it will print out details of your system. The script will display the values of each drive's parameters. Here is the output from one of my systems with 9x drives installed. NOTE: Data for only one drive is shown for brevity.
 
 ```
-root@Server_NVR:/volume1/web/logging# bash smart.sh
+root@Server_NVR:/volume1/web/logging# bash smart_logger.sh
 nvme_number_installed is -1
 no NVME drives installed, skipping NVME capture
 synology_SMART_status2,nas_name=Server_NVR,disk_path=/dev/sdc,smart_attribute=Raw_Read_Error_Rate disk_model="WD82PURZ-85TEUY0",disk_serial="xxxxxxx",ID=1,current_value=100,worst_value=100,threshold_value=016,RAW_value=0,disk_status=1
@@ -293,16 +307,32 @@ These errors indicate that InfluxDB cannot intake the data properly and debuggin
 13. Find the newly created task in your list, right click and select "run". when a confirmation window pops up, choose "yes"
 14. Verify the script ran correctly by going into Influxdb and viewing the collected data and verify fresh data was just added. 
 
-### Configuration of CRONTAB
+### Configuration of CRONTAB (non-TrueNAS Systems)
 
 details on crontab can be found here: https://man7.org/linux/man-pages/man5/crontab.5.html
 
 1. Open the CRONTAB file. It's location is not always consistent. If using Synology for example, you can use ```vi /etc/crontab```
 2. create two lines, each separated by 12 hours
 
-line 1: ```0 11 * * * root %PHP_Server_Root%/logging/smart.sh``` this will run the script every day at 11:00 AM
+line 1: ```0 11 * * * root %PHP_Server_Root%/logging/smart_logger.sh``` this will run the script every day at 11:00 AM
 
-line 2: ```0 23 * * * root %PHP_Server_Root%/logging/smart.sh``` this will run the script every day at 11:00 PM
+line 2: ```0 23 * * * root %PHP_Server_Root%/logging/smart_logger.sh``` this will run the script every day at 11:00 PM
+
+### Configuration of CRONTAB (TrueNAS Systems)
+
+go to `System -> Advanced Settings --> Cron Jobs`
+
+Click `Add`
+
+for "Description" enter `SMART Logging`
+
+for "Command" Enter `bash /mnt/volume1/web/logging/smart_logger.sh` however ensure the path to your file is correct
+
+for "Run As User*" chosoe `root`
+
+for "Schedule*" choose the hourly option, or chose another setting to your preference
+
+ensure all three check boxes `Hide Standard Output`, `Hide Standard Error`, and `Enabled` are checked
 
 
 
