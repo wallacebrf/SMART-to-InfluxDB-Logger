@@ -1,14 +1,14 @@
 <?php
-//version 1.0 dated 2/5/2024
+//version 2.0 dated 6/19/2025
 //By Brian Wallace
 ///////////////////////////////////////////////////
 //User Defined Variables
 ///////////////////////////////////////////////////
 
-$config_file="/volume1/Server_NVR/web/logging/smart_logging_config.txt";
+$config_file="/var/www/html/config/config_files/smart_logging_config.txt";
 $use_login_sessions=true; //set to false if not using user login sessions
-$form_submittal_destination="index.php?page=6&config_page=smart_servernvr"; //set to the destination the HTML form submit should be directed to
-$page_title="Server_NVR SMART Logging and Notification Configuration Settings";
+$form_submittal_destination="index.php?page=6&config_page=smart_server2"; //set to the destination the HTML form submit should be directed to
+$page_title="TrueNAS SMART Logging and Notification Configuration Settings";
 
 ///////////////////////////////////////////////////
 //Beginning of configuration page
@@ -58,7 +58,7 @@ $influxdb_pass_error="";
 $script_enable_error="";
 $AuthPass1_error="";
 $PrivPass2_error="";
-$influx_db_version_error="";
+//$influx_db_version_error="";
 $influxdb_org_error="";
 $enable_email_notifications_error="";
 $email_address_error="";
@@ -102,10 +102,32 @@ $paramter_19_name_error="";
 $paramter_19_notification_threshold_error="";
 $paramter_20_name_error="";
 $paramter_20_notification_threshold_error="";
+
+$paramter_21_name_error="";
+$paramter_21_notification_threshold_error="";
+$paramter_22_name_error="";
+$paramter_22_notification_threshold_error="";
+$paramter_23_name_error="";
+$paramter_23_notification_threshold_error="";
+$paramter_24_name_error="";
+$paramter_24_notification_threshold_error="";
+$paramter_25_name_error="";
+$paramter_25_notification_threshold_error="";
+$paramter_26_name_error="";
+$paramter_26_notification_threshold_error="";
+$paramter_27_name_error="";
+$paramter_27_notification_threshold_error="";
+$paramter_28_name_error="";
+$paramter_28_notification_threshold_error="";
+$paramter_29_name_error="";
+$paramter_29_notification_threshold_error="";
+$paramter_30_name_error="";
+$paramter_30_notification_threshold_error="";
 $from_email_address_error="";
 $generic_error="";
 $snmp_auth_protocol_error="";
 $snmp_privacy_protocol_error="";
+//$influxdb_user="user";
 		
 
 if(isset($_POST['submit_server_PDU'])){
@@ -129,8 +151,8 @@ if(isset($_POST['submit_server_PDU'])){
 	[$influxdb_port, $influxdb_port_error] = test_input_processing($_POST['influxdb_port'], $pieces[6], "numeric", 0, 65000);	
 	
 	[$influxdb_name, $influxdb_name_error] = test_input_processing($_POST['influxdb_name'], $pieces[7], "name", 0, 0);
-	
-	[$influxdb_user, $influxdb_user_error] = test_input_processing($_POST['influxdb_user'], $pieces[8], "name", 0, 0);		
+
+	//[$influxdb_user, $influxdb_user_error] = test_input_processing($_POST['influxdb_user'], $pieces[8], "name", 0, 0);		
 
 	[$influxdb_pass, $influxdb_pass_error] = test_input_processing($_POST['influxdb_pass'], $pieces[9], "password", 0, 0);	
 	
@@ -140,7 +162,7 @@ if(isset($_POST['submit_server_PDU'])){
 	
 	[$PrivPass2, $PrivPass2_error] = test_input_processing($_POST['PrivPass2'], $pieces[12], "password", 0, 0);
 	
-	[$influx_db_version, $influx_db_version_error] = test_input_processing($_POST['influx_db_version'], $pieces[13], "numeric", 1, 2);
+	//[$influx_db_version, $influx_db_version_error] = test_input_processing($_POST['influx_db_version'], $pieces[13], "numeric", 1, 2);
 	
 	[$influxdb_org, $influxdb_org_error] = test_input_processing($_POST['influxdb_org'], $pieces[14], "name", 0, 0);
 	
@@ -355,7 +377,90 @@ if(isset($_POST['submit_server_PDU'])){
 	
 	[$paramter_20_notification_threshold, $paramter_20_notification_threshold_error] = test_input_processing($_POST['paramter_20_notification_threshold'], $pieces[79], "numeric", 0, 100000);
 	
-	$put_contents_string="".$SNMP_user.",".$capture_interval.",".$nas_url.",nas_name,NAS,".$influxdb_host.",".$influxdb_port.",".$influxdb_name.",".$influxdb_user.",".$influxdb_pass.",".$script_enable.",".$AuthPass1.",".$PrivPass2.",".$influx_db_version.",".$influxdb_org.",".$enable_email_notifications.",".$email_address.",".$paramter_1_name.",".$paramter_1_notification_threshold.",".$paramter_2_name.",".$paramter_2_notification_threshold.",".$paramter_3_name.",".$paramter_3_notification_threshold.",".$paramter_4_name.",".$paramter_4_notification_threshold.",".$paramter_5_name.",".$paramter_5_notification_threshold.",".$from_email_address.",".$snmp_auth_protocol.",".$snmp_privacy_protocol.",".$paramter_1_type.",".$paramter_2_type.",".$paramter_3_type.",".$paramter_4_type.",".$paramter_5_type.",".$paramter_6_type.",".$paramter_7_type.",".$paramter_8_type.",".$paramter_9_type.",".$paramter_10_type.",".$paramter_11_type.",".$paramter_12_type.",".$paramter_13_type.",".$paramter_14_type.",".$paramter_15_type.",".$paramter_16_type.",".$paramter_17_type.",".$paramter_18_type.",".$paramter_19_type.",".$paramter_20_type.",".$paramter_6_name.",".$paramter_6_notification_threshold.",".$paramter_7_name.",".$paramter_7_notification_threshold.",".$paramter_8_name.",".$paramter_8_notification_threshold.",".$paramter_9_name.",".$paramter_9_notification_threshold.",".$paramter_10_name.",".$paramter_10_notification_threshold.",".$paramter_11_name.",".$paramter_11_notification_threshold.",".$paramter_12_name.",".$paramter_12_notification_threshold.",".$paramter_13_name.",".$paramter_13_notification_threshold.",".$paramter_14_name.",".$paramter_14_notification_threshold.",".$paramter_15_name.",".$paramter_15_notification_threshold.",".$paramter_16_name.",".$paramter_16_notification_threshold.",".$paramter_17_name.",".$paramter_17_notification_threshold.",".$paramter_18_name.",".$paramter_18_notification_threshold.",".$paramter_19_name.",".$paramter_19_notification_threshold.",".$paramter_20_name.",".$paramter_20_notification_threshold."";
+	
+	
+	
+	[$paramter_21_name, $paramter_21_name_error] = test_input_processing($_POST['paramter_21_name'], $pieces[69], "name", 0, 0);
+	[$paramter_21_notification_threshold, $paramter_21_notification_threshold_error] = test_input_processing($_POST['paramter_21_notification_threshold'], $pieces[70], "numeric", 0, 100000);
+	if ($_POST['paramter_21_type']==">" || $_POST['paramter_21_type']=="=" || $_POST['paramter_21_type']=="<"){
+		$paramter_21_type=($_POST['paramter_21_type']);
+	}else{
+		$paramter_21_type=$pieces[71];
+	}
+	
+	[$paramter_22_name, $paramter_22_name_error] = test_input_processing($_POST['paramter_22_name'], $pieces[72], "name", 0, 0);
+	[$paramter_22_notification_threshold, $paramter_22_notification_threshold_error] = test_input_processing($_POST['paramter_22_notification_threshold'], $pieces[73], "numeric", 0, 100000);
+	if ($_POST['paramter_22_type']==">" || $_POST['paramter_22_type']=="=" || $_POST['paramter_22_type']=="<"){
+		$paramter_22_type=($_POST['paramter_22_type']);
+	}else{
+		$paramter_22_type=$pieces[74];
+	}
+	
+	[$paramter_23_name, $paramter_23_name_error] = test_input_processing($_POST['paramter_23_name'], $pieces[75], "name", 0, 0);
+	[$paramter_23_notification_threshold, $paramter_23_notification_threshold_error] = test_input_processing($_POST['paramter_23_notification_threshold'], $pieces[76], "numeric", 0, 100000);
+	if ($_POST['paramter_23_type']==">" || $_POST['paramter_23_type']=="=" || $_POST['paramter_23_type']=="<"){
+		$paramter_23_type=($_POST['paramter_23_type']);
+	}else{
+		$paramter_23_type=$pieces[77];
+	}
+	
+	[$paramter_24_name, $paramter_24_name_error] = test_input_processing($_POST['paramter_24_name'], $pieces[78], "name", 0, 0);
+	[$paramter_24_notification_threshold, $paramter_24_notification_threshold_error] = test_input_processing($_POST['paramter_24_notification_threshold'], $pieces[79], "numeric", 0, 100000);
+	if ($_POST['paramter_24_type']==">" || $_POST['paramter_24_type']=="=" || $_POST['paramter_24_type']=="<"){
+		$paramter_24_type=($_POST['paramter_24_type']);
+	}else{
+		$paramter_24_type=$pieces[80];
+	}
+	
+	[$paramter_25_name, $paramter_25_name_error] = test_input_processing($_POST['paramter_25_name'], $pieces[81], "name", 0, 0);
+	[$paramter_25_notification_threshold, $paramter_25_notification_threshold_error] = test_input_processing($_POST['paramter_25_notification_threshold'], $pieces[82], "numeric", 0, 100000);
+	if ($_POST['paramter_25_type']==">" || $_POST['paramter_25_type']=="=" || $_POST['paramter_25_type']=="<"){
+		$paramter_25_type=($_POST['paramter_25_type']);
+	}else{
+		$paramter_25_type=$pieces[83];
+	}
+	
+	[$paramter_26_name, $paramter_26_name_error] = test_input_processing($_POST['paramter_26_name'], $pieces[84], "name", 0, 0);
+	[$paramter_26_notification_threshold, $paramter_26_notification_threshold_error] = test_input_processing($_POST['paramter_26_notification_threshold'], $pieces[85], "numeric", 0, 100000);
+	if ($_POST['paramter_26_type']==">" || $_POST['paramter_26_type']=="=" || $_POST['paramter_26_type']=="<"){
+		$paramter_26_type=($_POST['paramter_26_type']);
+	}else{
+		$paramter_26_type=$pieces[86];
+	}
+	
+	[$paramter_27_name, $paramter_27_name_error] = test_input_processing($_POST['paramter_27_name'], $pieces[87], "name", 0, 0);
+	[$paramter_27_notification_threshold, $paramter_27_notification_threshold_error] = test_input_processing($_POST['paramter_27_notification_threshold'], $pieces[88], "numeric", 0, 100000);
+	if ($_POST['paramter_27_type']==">" || $_POST['paramter_27_type']=="=" || $_POST['paramter_27_type']=="<"){
+		$paramter_27_type=($_POST['paramter_27_type']);
+	}else{
+		$paramter_27_type=$pieces[89];
+	}
+	
+	[$paramter_28_name, $paramter_28_name_error] = test_input_processing($_POST['paramter_28_name'], $pieces[90], "name", 0, 0);
+	[$paramter_28_notification_threshold, $paramter_28_notification_threshold_error] = test_input_processing($_POST['paramter_28_notification_threshold'], $pieces[91], "numeric", 0, 100000);
+	if ($_POST['paramter_28_type']==">" || $_POST['paramter_28_type']=="=" || $_POST['paramter_28_type']=="<"){
+		$paramter_28_type=($_POST['paramter_28_type']);
+	}else{
+		$paramter_28_type=$pieces[92];
+	}
+	
+	[$paramter_29_name, $paramter_29_name_error] = test_input_processing($_POST['paramter_29_name'], $pieces[93], "name", 0, 0);
+	[$paramter_29_notification_threshold, $paramter_29_notification_threshold_error] = test_input_processing($_POST['paramter_29_notification_threshold'], $pieces[94], "numeric", 0, 100000);
+	if ($_POST['paramter_29_type']==">" || $_POST['paramter_29_type']=="=" || $_POST['paramter_29_type']=="<"){
+		$paramter_29_type=($_POST['paramter_29_type']);
+	}else{
+		$paramter_29_type=$pieces[95];
+	}
+	
+	[$paramter_30_name, $paramter_30_name_error] = test_input_processing($_POST['paramter_30_name'], $pieces[96], "name", 0, 0);
+	[$paramter_30_notification_threshold, $paramter_30_notification_threshold_error] = test_input_processing($_POST['paramter_30_notification_threshold'], $pieces[97], "numeric", 0, 100000);
+	if ($_POST['paramter_30_type']==">" || $_POST['paramter_30_type']=="=" || $_POST['paramter_30_type']=="<"){
+		$paramter_30_type=($_POST['paramter_30_type']);
+	}else{
+		$paramter_30_type=$pieces[98];
+	}
+
+	$put_contents_string="".$influxdb_host.",".$influxdb_port.",".$influxdb_name.",".$influxdb_pass.",".$script_enable.",".$influxdb_org.",".$enable_email_notifications.",".$email_address.",".$paramter_1_name.",".$paramter_1_notification_threshold.",".$paramter_2_name.",".$paramter_2_notification_threshold.",".$paramter_3_name.",".$paramter_3_notification_threshold.",".$paramter_4_name.",".$paramter_4_notification_threshold.",".$paramter_5_name.",".$paramter_5_notification_threshold.",".$from_email_address.",".$paramter_1_type.",".$paramter_2_type.",".$paramter_3_type.",".$paramter_4_type.",".$paramter_5_type.",".$paramter_6_type.",".$paramter_7_type.",".$paramter_8_type.",".$paramter_9_type.",".$paramter_10_type.",".$paramter_11_type.",".$paramter_12_type.",".$paramter_13_type.",".$paramter_14_type.",".$paramter_15_type.",".$paramter_16_type.",".$paramter_17_type.",".$paramter_18_type.",".$paramter_19_type.",".$paramter_20_type.",".$paramter_6_name.",".$paramter_6_notification_threshold.",".$paramter_7_name.",".$paramter_7_notification_threshold.",".$paramter_8_name.",".$paramter_8_notification_threshold.",".$paramter_9_name.",".$paramter_9_notification_threshold.",".$paramter_10_name.",".$paramter_10_notification_threshold.",".$paramter_11_name.",".$paramter_11_notification_threshold.",".$paramter_12_name.",".$paramter_12_notification_threshold.",".$paramter_13_name.",".$paramter_13_notification_threshold.",".$paramter_14_name.",".$paramter_14_notification_threshold.",".$paramter_15_name.",".$paramter_15_notification_threshold.",".$paramter_16_name.",".$paramter_16_notification_threshold.",".$paramter_17_name.",".$paramter_17_notification_threshold.",".$paramter_18_name.",".$paramter_18_notification_threshold.",".$paramter_19_name.",".$paramter_19_notification_threshold.",".$paramter_20_name.",".$paramter_20_notification_threshold.",".$paramter_21_name.",".$paramter_21_notification_threshold.",".$paramter_21_type.",".$paramter_22_name.",".$paramter_22_notification_threshold.",".$paramter_22_type.",".$paramter_23_name.",".$paramter_23_notification_threshold.",".$paramter_23_type.",".$paramter_24_name.",".$paramter_24_notification_threshold.",".$paramter_24_type.",".$paramter_25_name.",".$paramter_25_notification_threshold.",".$paramter_25_type.",".$paramter_26_name.",".$paramter_26_notification_threshold.",".$paramter_26_type.",".$paramter_27_name.",".$paramter_27_notification_threshold.",".$paramter_27_type.",".$paramter_28_name.",".$paramter_28_notification_threshold.",".$paramter_28_type.",".$paramter_29_name.",".$paramter_29_notification_threshold.",".$paramter_29_type.",".$paramter_30_name.",".$paramter_30_notification_threshold.",".$paramter_30_type."";
 		  
 	
 	if (file_put_contents("".$config_file."",$put_contents_string )==FALSE){
@@ -366,90 +471,131 @@ if(isset($_POST['submit_server_PDU'])){
 	if (file_exists("".$config_file."")) {
 		$data = file_get_contents("".$config_file."");
 		$pieces = explode(",", $data);
-		$SNMP_user=$pieces[0];
-		$capture_interval=$pieces[1];
-		$nas_url=$pieces[2];
-		$nas_name=$pieces[3];
-		$ups_group=$pieces[4];
-		$influxdb_host=$pieces[5];
-		$influxdb_port=$pieces[6];
-		$influxdb_name=$pieces[7];
-		$influxdb_user=$pieces[8];
-		$influxdb_pass=$pieces[9];
-		$script_enable=$pieces[10];
-		$AuthPass1=$pieces[11];
-		$PrivPass2=$pieces[12];
-		$influx_db_version=$pieces[13];
-		$influxdb_org=$pieces[14];
-		$enable_email_notifications=$pieces[15];
-		$email_address=$pieces[16];
-		$paramter_1_name=$pieces[17];
-		$paramter_1_notification_threshold=$pieces[18];
-		$paramter_2_name=$pieces[19];
-		$paramter_2_notification_threshold=$pieces[20];
-		$paramter_3_name=$pieces[21];
-		$paramter_3_notification_threshold=$pieces[22];
-		$paramter_4_name=$pieces[23];
-		$paramter_4_notification_threshold=$pieces[24];
-		$paramter_5_name=$pieces[25];
-		$paramter_5_notification_threshold=$pieces[26];
-		$from_email_address=$pieces[27];
-		$snmp_auth_protocol=$pieces[28];
-		$snmp_privacy_protocol=$pieces[29];
-		$paramter_1_type=$pieces[30];
-		$paramter_2_type=$pieces[31];
-		$paramter_3_type=$pieces[32];
-		$paramter_4_type=$pieces[33];
-		$paramter_5_type=$pieces[34];
-		$paramter_6_type=$pieces[35];
-		$paramter_7_type=$pieces[36];
-		$paramter_8_type=$pieces[37];
-		$paramter_9_type=$pieces[38];
-		$paramter_10_type=$pieces[39];
-		$paramter_11_type=$pieces[40];
-		$paramter_12_type=$pieces[41];
-		$paramter_13_type=$pieces[42];
-		$paramter_14_type=$pieces[43];
-		$paramter_15_type=$pieces[44];
-		$paramter_16_type=$pieces[45];
-		$paramter_17_type=$pieces[46];
-		$paramter_18_type=$pieces[47];
-		$paramter_19_type=$pieces[48];
-		$paramter_20_type=$pieces[49];
-		$paramter_6_name=$pieces[50];
-		$paramter_6_notification_threshold=$pieces[51];
-		$paramter_7_name=$pieces[52];
-		$paramter_7_notification_threshold=$pieces[53];
-		$paramter_8_name=$pieces[54];
-		$paramter_8_notification_threshold=$pieces[55];
-		$paramter_9_name=$pieces[56];
-		$paramter_9_notification_threshold=$pieces[57];
-		$paramter_10_name=$pieces[58];
-		$paramter_10_notification_threshold=$pieces[59];
-		$paramter_11_name=$pieces[60];
-		$paramter_11_notification_threshold=$pieces[61];
-		$paramter_12_name=$pieces[62];
-		$paramter_12_notification_threshold=$pieces[63];
-		$paramter_13_name=$pieces[64];
-		$paramter_13_notification_threshold=$pieces[65];
-		$paramter_14_name=$pieces[66];
-		$paramter_14_notification_threshold=$pieces[67];
-		$paramter_15_name=$pieces[68];
-		$paramter_15_notification_threshold=$pieces[69];
-		$paramter_16_name=$pieces[70];
-		$paramter_16_notification_threshold=$pieces[71];
-		$paramter_17_name=$pieces[72];
-		$paramter_17_notification_threshold=$pieces[73];
-		$paramter_18_name=$pieces[74];
-		$paramter_18_notification_threshold=$pieces[75];
-		$paramter_19_name=$pieces[76];
-		$paramter_19_notification_threshold=$pieces[77];
-		$paramter_20_name=$pieces[78];
-		$paramter_20_notification_threshold=$pieces[79];
+		//$SNMP_user=$pieces[0];
+		//$capture_interval=$pieces[1];
+		//$nas_url=$pieces[2];
+		//$nas_name=$pieces[3];
+		//$ups_group=$pieces[4];
+		$influxdb_host=$pieces[0];
+		$influxdb_port=$pieces[1];
+		$influxdb_name=$pieces[2];
+		//$influxdb_user=$pieces[8];
+		$influxdb_pass=$pieces[3];
+		$script_enable=$pieces[4];
+		//$AuthPass1=$pieces[11];
+		//$PrivPass2=$pieces[12];
+		//$influx_db_version=$pieces[13];
+		$influxdb_org=$pieces[5];
+		$enable_email_notifications=$pieces[6];
+		$email_address=$pieces[7];
+		$paramter_1_name=$pieces[8];
+		$paramter_1_notification_threshold=$pieces[9];
+		$paramter_2_name=$pieces[10];
+		$paramter_2_notification_threshold=$pieces[11];
+		$paramter_3_name=$pieces[12];
+		$paramter_3_notification_threshold=$pieces[13];
+		$paramter_4_name=$pieces[14];
+		$paramter_4_notification_threshold=$pieces[15];
+		$paramter_5_name=$pieces[16];
+		$paramter_5_notification_threshold=$pieces[17];
+		$from_email_address=$pieces[18];
+		//$snmp_auth_protocol=$pieces[28];
+		//$snmp_privacy_protocol=$pieces[29];
+		$paramter_1_type=$pieces[19];
+		$paramter_2_type=$pieces[20];
+		$paramter_3_type=$pieces[21];
+		$paramter_4_type=$pieces[22];
+		$paramter_5_type=$pieces[23];
+		$paramter_6_type=$pieces[24];
+		$paramter_7_type=$pieces[25];
+		$paramter_8_type=$pieces[26];
+		$paramter_9_type=$pieces[27];
+		$paramter_10_type=$pieces[28];
+		$paramter_11_type=$pieces[29];
+		$paramter_12_type=$pieces[30];
+		$paramter_13_type=$pieces[31];
+		$paramter_14_type=$pieces[32];
+		$paramter_15_type=$pieces[33];
+		$paramter_16_type=$pieces[34];
+		$paramter_17_type=$pieces[35];
+		$paramter_18_type=$pieces[36];
+		$paramter_19_type=$pieces[37];
+		$paramter_20_type=$pieces[38];
+		$paramter_6_name=$pieces[39];
+		$paramter_6_notification_threshold=$pieces[40];
+		$paramter_7_name=$pieces[41];
+		$paramter_7_notification_threshold=$pieces[42];
+		$paramter_8_name=$pieces[43];
+		$paramter_8_notification_threshold=$pieces[44];
+		$paramter_9_name=$pieces[45];
+		$paramter_9_notification_threshold=$pieces[46];
+		$paramter_10_name=$pieces[47];
+		$paramter_10_notification_threshold=$pieces[48];
+		$paramter_11_name=$pieces[49];
+		$paramter_11_notification_threshold=$pieces[50];
+		$paramter_12_name=$pieces[51];
+		$paramter_12_notification_threshold=$pieces[52];
+		$paramter_13_name=$pieces[53];
+		$paramter_13_notification_threshold=$pieces[54];
+		$paramter_14_name=$pieces[55];
+		$paramter_14_notification_threshold=$pieces[56];
+		$paramter_15_name=$pieces[57];
+		$paramter_15_notification_threshold=$pieces[58];
+		$paramter_16_name=$pieces[59];
+		$paramter_16_notification_threshold=$pieces[60];
+		$paramter_17_name=$pieces[61];
+		$paramter_17_notification_threshold=$pieces[62];
+		$paramter_18_name=$pieces[63];
+		$paramter_18_notification_threshold=$pieces[64];
+		$paramter_19_name=$pieces[65];
+		$paramter_19_notification_threshold=$pieces[66];
+		$paramter_20_name=$pieces[67];
+		$paramter_20_notification_threshold=$pieces[68];
+		
+		
+		$paramter_21_name=$pieces[69];
+		$paramter_21_notification_threshold=$pieces[70];
+		$paramter_21_type=$pieces[71];
+		
+		$paramter_22_name=$pieces[72];
+		$paramter_22_notification_threshold=$pieces[73];
+		$paramter_22_type=$pieces[74];
+		
+		$paramter_23_name=$pieces[75];
+		$paramter_23_notification_threshold=$pieces[76];
+		$paramter_23_type=$pieces[77];
+		
+		$paramter_24_name=$pieces[78];
+		$paramter_24_notification_threshold=$pieces[79];
+		$paramter_24_type=$pieces[80];
+		
+		$paramter_25_name=$pieces[81];
+		$paramter_25_notification_threshold=$pieces[82];
+		$paramter_25_type=$pieces[83];
+		
+		$paramter_26_name=$pieces[84];
+		$paramter_26_notification_threshold=$pieces[85];
+		$paramter_26_type=$pieces[86];
+		
+		$paramter_27_name=$pieces[87];
+		$paramter_27_notification_threshold=$pieces[88];
+		$paramter_27_type=$pieces[89];
+		
+		$paramter_28_name=$pieces[90];
+		$paramter_28_notification_threshold=$pieces[91];
+		$paramter_28_type=$pieces[92];
+		
+		$paramter_29_name=$pieces[93];
+		$paramter_29_notification_threshold=$pieces[94];
+		$paramter_29_type=$pieces[95];
+		
+		$paramter_30_name=$pieces[96];
+		$paramter_30_notification_threshold=$pieces[97];
+		$paramter_30_type=$pieces[98];
 		
 		
 	}else{
-		$put_contents_string="SNMP_user,60,0.0.0.0,nas_name,NAS,localhost,8086,influxdb_name,influxdb_user,influxdb_pass,0,AuthPass,PrivPass2,2,influxdb_org,0,email_address,paramter_1_name,0,paramter_2_name,0,paramter_3_name,0,paramter_4_name,0,paramter_5_name,0,from_email_address,MD5,AES,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,paramter_6_name,0,paramter_7_name,0,paramter_8_name,0,paramter_9_name,0,paramter_10_name,0,paramter_11_name,0,paramter_12_name,0,paramter_13_name,0,paramter_14_name,0,paramter_15_name,0,paramter_16_name,0,paramter_17_name,0,paramter_18_name,0,paramter_19_name,0,paramter_20_name,0";
+		$put_contents_string="localhost,8086,influxdb_name,influxdb_pass,0,influxdb_org,0,email_address,paramter_1_name,0,paramter_2_name,0,paramter_3_name,0,paramter_4_name,0,paramter_5_name,0,from_email_address,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,>,paramter_6_name,0,paramter_7_name,0,paramter_8_name,0,paramter_9_name,0,paramter_10_name,0,paramter_11_name,0,paramter_12_name,0,paramter_13_name,0,paramter_14_name,0,paramter_15_name,0,paramter_16_name,0,paramter_17_name,0,paramter_18_name,0,paramter_19_name,0,paramter_20_name,0,paramter_21_name,0,>,paramter_22_name,0,>,paramter_23_name,0,>,paramter_24_name,0,>,paramter_25_name,0,>,paramter_26_name,0,>,paramter_27_name,0,>,paramter_28_name,0,>,paramter_29_name,0,>,paramter_30_name,0,>";
 			  
 		if (file_put_contents("".$config_file."",$put_contents_string )==FALSE){
 			print "<font color=\"red\">Error - could not save configuration</font>";
@@ -498,9 +644,7 @@ print "					>Enable Email Notifications?
 					<p>->IP of Influx DB: <input type=\"text\" name=\"influxdb_host\" value=".$influxdb_host."> ".$influxdb_host_error."</p>
 					<p>->PORT of Influx DB: <input type=\"text\" name=\"influxdb_port\" value=".$influxdb_port."> ".$influxdb_port_error."</p>
 					<p>->Database to use within Influx DB: <input type=\"text\" name=\"influxdb_name\" value=".$influxdb_name."> ".$influxdb_name_error."</p>
-					<p>->User Name of Influx DB: <input type=\"text\" name=\"influxdb_user\" value=".$influxdb_user."> ".$influxdb_user_error." </p>
 					<p>->Password of Influx DB: <input type=\"text\" name=\"influxdb_pass\" value=".$influxdb_pass."> ".$influxdb_pass_error."</p>
-					<p>->Influx DB Version: <input type=\"text\" name=\"influx_db_version\" value=".$influx_db_version."> ".$influx_db_version_error."</p>
 					<p>->Influx DB Org: <input type=\"text\" name=\"influxdb_org\" value=".$influxdb_org."> ".$influxdb_org_error."</p>
 					<br>
 					<input type=\"hidden\" name=\"nas_url\" value=".$nas_url.">
@@ -852,6 +996,190 @@ print "					>Enable Email Notifications?
 							}
 					print "</select>
 						<input type=\"text\" name=\"paramter_20_notification_threshold\" value=".$paramter_20_notification_threshold."> ".$paramter_20_notification_threshold_error."</p>
+					<p>-><b>Disk Parameter 21</b> <input type=\"text\" name=\"paramter_21_name\" value=".$paramter_21_name."> ".$paramter_21_name_error."
+						<select name=\"paramter_21_type\">";
+							if ($paramter_21_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_21_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_21_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_21_notification_threshold\" value=".$paramter_21_notification_threshold."> ".$paramter_21_notification_threshold_error."</p>
+						<p>-><b>Disk Parameter 22</b> <input type=\"text\" name=\"paramter_22_name\" value=".$paramter_22_name."> ".$paramter_22_name_error."
+						<select name=\"paramter_22_type\">";
+							if ($paramter_22_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_22_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_22_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_22_notification_threshold\" value=".$paramter_22_notification_threshold."> ".$paramter_22_notification_threshold_error."</p>
+					
+					<p>-><b>Disk Parameter 23</b> <input type=\"text\" name=\"paramter_23_name\" value=".$paramter_23_name."> ".$paramter_23_name_error."
+						<select name=\"paramter_23_type\">";
+							if ($paramter_23_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_23_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_23_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_23_notification_threshold\" value=".$paramter_23_notification_threshold."> ".$paramter_23_notification_threshold_error."</p>
+					
+					<p>-><b>Disk Parameter 24</b> <input type=\"text\" name=\"paramter_24_name\" value=".$paramter_24_name."> ".$paramter_24_name_error."
+						<select name=\"paramter_24_type\">";
+							if ($paramter_24_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_24_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_24_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_24_notification_threshold\" value=".$paramter_24_notification_threshold."> ".$paramter_24_notification_threshold_error."</p>
+					
+					
+					<p>-><b>Disk Parameter 25</b> <input type=\"text\" name=\"paramter_25_name\" value=".$paramter_25_name."> ".$paramter_25_name_error."
+						<select name=\"paramter_25_type\">";
+							if ($paramter_25_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_25_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_25_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_25_notification_threshold\" value=".$paramter_25_notification_threshold."> ".$paramter_25_notification_threshold_error."</p>
+					
+					<p>-><b>Disk Parameter 26</b> <input type=\"text\" name=\"paramter_26_name\" value=".$paramter_26_name."> ".$paramter_26_name_error."
+						<select name=\"paramter_26_type\">";
+							if ($paramter_26_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_26_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_26_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_26_notification_threshold\" value=".$paramter_26_notification_threshold."> ".$paramter_26_notification_threshold_error."</p>
+					
+					<p>-><b>Disk Parameter 27</b> <input type=\"text\" name=\"paramter_27_name\" value=".$paramter_27_name."> ".$paramter_27_name_error."
+						<select name=\"paramter_27_type\">";
+							if ($paramter_27_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_27_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_27_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_27_notification_threshold\" value=".$paramter_27_notification_threshold."> ".$paramter_27_notification_threshold_error."</p>
+					
+					<p>-><b>Disk Parameter 28</b> <input type=\"text\" name=\"paramter_28_name\" value=".$paramter_28_name."> ".$paramter_28_name_error."
+						<select name=\"paramter_28_type\">";
+							if ($paramter_28_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_28_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_28_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_28_notification_threshold\" value=".$paramter_28_notification_threshold."> ".$paramter_28_notification_threshold_error."</p>
+					
+					<p>-><b>Disk Parameter 29</b> <input type=\"text\" name=\"paramter_29_name\" value=".$paramter_29_name."> ".$paramter_29_name_error."
+						<select name=\"paramter_29_type\">";
+							if ($paramter_29_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_29_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_29_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_29_notification_threshold\" value=".$paramter_29_notification_threshold."> ".$paramter_29_notification_threshold_error."</p>
+					
+					<p>-><b>Disk Parameter 30</b> <input type=\"text\" name=\"paramter_30_name\" value=".$paramter_30_name."> ".$paramter_30_name_error."
+						<select name=\"paramter_30_type\">";
+							if ($paramter_30_type==">"){
+								print "<option value=\">\" selected>></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_30_type=="<"){
+								print "<option value=\">\">></option>
+								<option value=\"<\" selected><</option>
+								<option value=\"=\">=</option>";
+							}else if ($paramter_30_type=="="){
+								print "<option value=\">\">></option>
+								<option value=\"<\"><</option>
+								<option value=\"=\" selected>=</option>";
+							}
+					print "</select>
+						<input type=\"text\" name=\"paramter_30_notification_threshold\" value=".$paramter_30_notification_threshold."> ".$paramter_30_notification_threshold_error."</p>
+					
+					
+					
+					
+					
 					<center><input type=\"submit\" name=\"submit_server_PDU\" value=\"Submit\" /></center>
 				</form>
 			</td>
