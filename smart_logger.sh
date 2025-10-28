@@ -1,6 +1,6 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 # shellcheck disable=SC2162,SC2004,SC2129,SC2116,SC2321,SC2027,SC2086,SC2219
-#Version 5/10/2025
+#Version 6/11/2025
 #made updates to appease shell check
 #By Brian Wallace
 #########################################################
@@ -12,19 +12,26 @@ if [[ $( whoami ) != "root" ]]; then
 	exit 1
 fi
 
+if [ -d "/mnt/ramfs" ]; then
+	echo "RAM disk \"/mnt/ramfs\" Exists"
+else
+	echo "creating RAM disk \"/mnt/ramfs\""
+	mkdir /mnt/ramfs && mount -t tmpfs -o size=100m ramdisk /mnt/ramfs
+fi
+
 #########################################################
 #USER ADJUSABLE SCRIPT VARIABLES
-email_contents="/mnt/volume1/web/logging/notifications/SMART_Logging_email_contents.txt"					#when email notifications are sent, the contents of the email and a log entry if the email successfully sent is saved to this file
-lock_file_location="/mnt/volume1/web/logging/notifications/SMART_Logging.lock"								#file created while the script is running and deleted when the script is done. this is to prevent more than one copy of the script from running at a time
-email_last_sent="/mnt/volume1/web/logging/notifications/${0##*/}_SMART_Logging_last_message_sent.txt"		#some emails are to be sent only every 60 minutes (like config file missing/corrupt messages) to prevent your inbox from being spammed
+email_contents="/mnt/volume1/logging/notifications/SMART_Logging_email_contents.txt"					#when email notifications are sent, the contents of the email and a log entry if the email successfully sent is saved to this file
+lock_file_location="/mnt/volume1/logging/notifications/SMART_Logging.lock"								#file created while the script is running and deleted when the script is done. this is to prevent more than one copy of the script from running at a time
+email_last_sent="/mnt/volume1/logging/notifications/${0##*/}_SMART_Logging_last_message_sent.txt"		#some emails are to be sent only every 60 minutes (like config file missing/corrupt messages) to prevent your inbox from being spammed
 debug=0																									#if set to "1" the script will display all of the collected data being sent to InfluxDB
-nas_name_error="TrueNAS"	
-synology=0																			#if the config file fails to load, this will ensure the script describes what system the email is from
-#config_file_location="/mnt/volume1/web/config"																#where the configuration file will be saved. do not change value unless the value is also changed in the smart_config.php file
-#config_file_name="smart_logging_config.txt"															#name of config file, do not change value unless the value is also changed in the smart_config.php file
-#measurement="Dosk_SMART"																				#influxDB measurement name
-#nas_name="Server_Name"																					#name of server the SMART data is being collected from
-#use_sendmail=1																							#set to "1" to use "sendmail" command, set to "0" to use the "ssmtp" command when sending email notifications, set to "2" if using trueNAS
+nas_name_error="TrueNAS"																				#if the config file fails to load, this will ensure the script describes what system the email is from
+synology=0																								#set to a value of 1 if using synology															
+config_file_location="/mnt/volume1/hosting/web/config/config_files"
+config_file_name="smart_logging_config.txt"
+measurement="TrueNAS_SMART_status"
+nas_name="TrueNAS"
+use_sendmail=2  #use TrueNAS																						#set to "1" to use "sendmail" command, set to "0" to use the "ssmtp" command when sending email notifications, set to "2" if using trueNAS
 
 #########################################################
 #EMAIL SETTINGS USED IF CONFIGURATION FILE IS UNAVAILABLE
@@ -34,44 +41,6 @@ email_address="email@email.com"
 from_email_address="email@email.com"
 #########################################################
 
-
-#for my personal use as i have multiple Synology systems, these lines can be deleted and the variables above can be un-commented
-######################################################################################
-sever_type=4 #1=server2, 2=serverNVR, 3=serverplex, 4=TrueNAS
-
-if [[ $sever_type == 1 ]]; then
-	config_file_location="/volume1/web/config/config_files/config_files_local"
-	config_file_name="smart_logging_config.txt"
-	measurement="synology_SMART_status2"
-	nas_name="Server2"
-	use_sendmail=1
-fi
-
-if [[ $sever_type == 2 ]]; then
-	config_file_location="/volume1/web/logging"
-	config_file_name="smart_logging_config.txt"
-	measurement="synology_SMART_status2"
-	nas_name="Server_NVR"
-	use_sendmail=1
-fi
-
-if [[ $sever_type == 3 ]]; then
-	config_file_location="/volume1/web/config/config_files/config_files_local"
-	config_file_name="smart_logging_config.txt"
-	measurement="synology_SMART_status2"
-	nas_name="Server-Plex"
-	use_sendmail=1
-fi
-
-if [[ $sever_type == 4 ]]; then
-	config_file_location="/mnt/volume1/web/config"
-	config_file_name="smart_logging_config.txt"
-	measurement="TrueNAS_SMART_status"
-	nas_name="TrueNAS"
-	use_sendmail=2  #use TrueNAS
-fi
-
-######################################################################################
 
 #create a lock file in the configuration directory to prevent more than one instance of this script from executing  at once
 if ! mkdir "$lock_file_location"; then
@@ -84,17 +53,17 @@ trap 'rm -rf "$lock_file_location"' EXIT #remove the lockdir on exit
 #this function pings google.com to confirm internet access is working prior to sending email notifications 
 #########################################################
 check_internet() {
-if [[ $synology != 0 ]]; then
-	ping -c1 "google.com" > /dev/null #ping google.com									
-		local status=$?
-		if ! (exit $status); then
-			false
-		else
-			true
-		fi
-else
-	true
-fi
+	if [[ $synology != 0 ]]; then
+		ping -c1 "google.com" > /dev/null #ping google.com									
+			local status=$?
+			if ! (exit $status); then
+				false
+			else
+				true
+			fi
+	else
+		true
+	fi
 }
 
 ##################################################################################################################
@@ -200,7 +169,7 @@ function send_mail(){
 				address_explode=(`echo "$email_address" | sed 's/;/\n/g'`)
 				local bb=0
 				for bb in "${!address_explode[@]}"; do
-					python3 /mnt/volume1/web/logging/multireport_sendemail.py --subject "${3}" --to_address "${address_explode[$bb]}" --mail_body_html "$now - ${2}" --override_fromemail "$from_email_address"
+					python3 /mnt/volume1/logging/multireport_sendemail.py --subject "${3}" --to_address "${address_explode[$bb]}" --mail_body_html "$now - ${2}" --override_fromemail "$from_email_address"
 				done
 			else #since the value is not equal to 1, use ssmtp command
 				#verify the "ssmtp" command is installed / available on the system
@@ -246,8 +215,8 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 	IFS=$',' read -d '' -r -a explode < "$config_file_location/$config_file_name"
 	
 	#verify the correct number of configuration parameters are in the configuration file
-	if [[ ! ${#explode[@]} == 80 ]]; then
-		send_mail "$email_last_sent" "WARNING - the configuration file is incorrect or corrupted. It should have 80 parameters, it currently has ${#explode[@]} parameters." "Warning NAS \"$nas_name\" SNMP Monitoring Failed for script \"${0##*/}\" - Configuration file is incorrect" "$email_contents" "Config File Error" 60 "$use_sendmail"
+	if [[ ! ${#explode[@]} == 99 ]]; then
+		send_mail "$email_last_sent" "WARNING - the configuration file is incorrect or corrupted. It should have 99 parameters, it currently has ${#explode[@]} parameters." "Warning NAS \"$nas_name\" SNMP Monitoring Failed for script \"${0##*/}\" - Configuration file is incorrect" "$email_contents" "Config File Error" 60 "$use_sendmail"
 		exit 1
 	fi	
 	paramter_name=()
@@ -255,27 +224,36 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 	paramter_type=()
 	
 	#save the parameter values into the respective variable and remove the quotes
-	influxdb_host="${explode[5]}"
-	influxdb_port="${explode[6]}"
-	influxdb_name="${explode[7]}"
-	influxdb_user="${explode[8]}"
-	influxdb_pass="${explode[9]}"
-	script_enable="${explode[10]}"
-	influx_db_version="${explode[13]}"
-	influxdb_org="${explode[14]}"
-	enable_email_notifications="${explode[15]}"
-	email_address="${explode[16]}"
-	paramter_name+=("${explode[17]}")
-	paramter_notification_threshold+=("${explode[18]}")
-	paramter_name+=("${explode[19]}")
-	paramter_notification_threshold+=("${explode[20]}")
-	paramter_name+=("${explode[21]}")
-	paramter_notification_threshold+=("${explode[22]}")
-	paramter_name+=("${explode[23]}")
-	paramter_notification_threshold+=("${explode[24]}")
-	paramter_name+=("${explode[25]}")
-	paramter_notification_threshold+=("${explode[26]}")
-	from_email_address="${explode[27]}"
+	influxdb_host="${explode[0]}"
+	influxdb_port="${explode[1]}"
+	influxdb_name="${explode[2]}"
+	influxdb_pass="${explode[3]}"
+	script_enable="${explode[4]}"
+	influxdb_org="${explode[5]}"
+	enable_email_notifications="${explode[6]}"
+	email_address="${explode[7]}"
+	paramter_name+=("${explode[8]}")
+	paramter_notification_threshold+=("${explode[9]}")
+	paramter_name+=("${explode[10]}")
+	paramter_notification_threshold+=("${explode[11]}")
+	paramter_name+=("${explode[12]}")
+	paramter_notification_threshold+=("${explode[13]}")
+	paramter_name+=("${explode[14]}")
+	paramter_notification_threshold+=("${explode[15]}")
+	paramter_name+=("${explode[16]}")
+	paramter_notification_threshold+=("${explode[17]}")
+	from_email_address="${explode[18]}"
+	paramter_type+=("${explode[19]}")
+	paramter_type+=("${explode[20]}")
+	paramter_type+=("${explode[21]}")
+	paramter_type+=("${explode[22]}")
+	paramter_type+=("${explode[23]}")
+	paramter_type+=("${explode[24]}")
+	paramter_type+=("${explode[25]}")
+	paramter_type+=("${explode[26]}")
+	paramter_type+=("${explode[27]}")
+	paramter_type+=("${explode[28]}")
+	paramter_type+=("${explode[29]}")
 	paramter_type+=("${explode[30]}")
 	paramter_type+=("${explode[31]}")
 	paramter_type+=("${explode[32]}")
@@ -285,47 +263,67 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 	paramter_type+=("${explode[36]}")
 	paramter_type+=("${explode[37]}")
 	paramter_type+=("${explode[38]}")
-	paramter_type+=("${explode[39]}")
-	paramter_type+=("${explode[40]}")
-	paramter_type+=("${explode[41]}")
-	paramter_type+=("${explode[42]}")
-	paramter_type+=("${explode[43]}")
-	paramter_type+=("${explode[44]}")
-	paramter_type+=("${explode[45]}")
-	paramter_type+=("${explode[46]}")
-	paramter_type+=("${explode[47]}")
-	paramter_type+=("${explode[48]}")
-	paramter_type+=("${explode[49]}")
-	paramter_name+=("${explode[50]}")
-	paramter_notification_threshold+=("${explode[51]}")
-	paramter_name+=("${explode[52]}")
-	paramter_notification_threshold+=("${explode[53]}")
-	paramter_name+=("${explode[54]}")
-	paramter_notification_threshold+=("${explode[55]}")
-	paramter_name+=("${explode[56]}")
-	paramter_notification_threshold+=("${explode[57]}")
-	paramter_name+=("${explode[58]}")
-	paramter_notification_threshold+=("${explode[59]}")
-	paramter_name+=("${explode[60]}")
-	paramter_notification_threshold+=("${explode[61]}")
-	paramter_name+=("${explode[62]}")
-	paramter_notification_threshold+=("${explode[63]}")
-	paramter_name+=("${explode[64]}")
-	paramter_notification_threshold+=("${explode[65]}")
-	paramter_name+=("${explode[66]}")
-	paramter_notification_threshold+=("${explode[67]}")
-	paramter_name+=("${explode[68]}")
-	paramter_notification_threshold+=("${explode[69]}")
-	paramter_name+=("${explode[70]}")
-	paramter_notification_threshold+=("${explode[71]}")
+	paramter_name+=("${explode[39]}")
+	paramter_notification_threshold+=("${explode[40]}")
+	paramter_name+=("${explode[41]}")
+	paramter_notification_threshold+=("${explode[42]}")
+	paramter_name+=("${explode[43]}")
+	paramter_notification_threshold+=("${explode[44]}")
+	paramter_name+=("${explode[45]}")
+	paramter_notification_threshold+=("${explode[46]}")
+	paramter_name+=("${explode[47]}")
+	paramter_notification_threshold+=("${explode[48]}")
+	paramter_name+=("${explode[49]}")
+	paramter_notification_threshold+=("${explode[50]}")
+	paramter_name+=("${explode[51]}")
+	paramter_notification_threshold+=("${explode[52]}")
+	paramter_name+=("${explode[53]}")
+	paramter_notification_threshold+=("${explode[54]}")
+	paramter_name+=("${explode[55]}")
+	paramter_notification_threshold+=("${explode[56]}")
+	paramter_name+=("${explode[57]}")
+	paramter_notification_threshold+=("${explode[58]}")
+	paramter_name+=("${explode[59]}")
+	paramter_notification_threshold+=("${explode[60]}")
+	paramter_name+=("${explode[61]}")
+	paramter_notification_threshold+=("${explode[62]}")
+	paramter_name+=("${explode[63]}")
+	paramter_notification_threshold+=("${explode[64]}")
+	paramter_name+=("${explode[65]}")
+	paramter_notification_threshold+=("${explode[66]}")
+	paramter_name+=("${explode[67]}")
+	paramter_notification_threshold+=("${explode[68]}")
+	
+	paramter_name+=("${explode[69]}")
+	paramter_notification_threshold+=("${explode[70]}")
+	paramter_type+=("${explode[71]}")
 	paramter_name+=("${explode[72]}")
 	paramter_notification_threshold+=("${explode[73]}")
-	paramter_name+=("${explode[74]}")
-	paramter_notification_threshold+=("${explode[75]}")
-	paramter_name+=("${explode[76]}")
-	paramter_notification_threshold+=("${explode[77]}")
+	paramter_type+=("${explode[74]}")
+	paramter_name+=("${explode[75]}")
+	paramter_notification_threshold+=("${explode[76]}")
+	paramter_type+=("${explode[77]}")
 	paramter_name+=("${explode[78]}")
 	paramter_notification_threshold+=("${explode[79]}")
+	paramter_type+=("${explode[80]}")
+	paramter_name+=("${explode[81]}")
+	paramter_notification_threshold+=("${explode[82]}")
+	paramter_type+=("${explode[83]}")
+	paramter_name+=("${explode[84]}")
+	paramter_notification_threshold+=("${explode[85]}")
+	paramter_type+=("${explode[86]}")
+	paramter_name+=("${explode[87]}")
+	paramter_notification_threshold+=("${explode[88]}")
+	paramter_type+=("${explode[89]}")
+	paramter_name+=("${explode[90]}")
+	paramter_notification_threshold+=("${explode[91]}")
+	paramter_type+=("${explode[92]}")
+	paramter_name+=("${explode[93]}")
+	paramter_notification_threshold+=("${explode[94]}")
+	paramter_type+=("${explode[95]}")
+	paramter_name+=("${explode[96]}")
+	paramter_notification_threshold+=("${explode[97]}")
+	paramter_type+=("${explode[98]}")
 
 	if [ "$script_enable" -eq 1 ]; then
 		post_url=""
@@ -343,7 +341,7 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 
 		IFS=$'\n' read -rd '' -a disk_list3_exploded <<<"$disk_list3"	#create an array of the dev/usb results if they exist
 
-
+		
 		#add usb drives to disk_list1_exploded or disk_list2_exploded
 		if [[ ${#disk_list1_exploded[@]} -gt "0" ]]; then		#/dev/sata* and /dev/sas*
 			for usb_disk in "${disk_list3_exploded[@]}"; do
@@ -378,13 +376,13 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 		#now we can loop through all the available disks
 		xx=0
 		for xx in "${!valid_array[@]}"; do
-
+			
 			#extract just the "/dev/sata1" or just the "/dev/sda" parts of the results, get rid of everything else
 			disk="${valid_array[$xx]}"
 			disk=$(echo "${disk##*Disk }") 		#get rid of "Disk " at the beginning of the string
 			disk=$(echo "${disk%:*}") 			#get rid of everything after the first colon which is after the name of the disk such as "/dev/sata1:"
 			
-			raw_data=$(smartctl -a -d ata "$disk") #get all of the SMART data for the disk
+			raw_data=$(smartctl -x "$disk") #get all of the SMART data for the disk
 			
 			if [[ "$(echo "$raw_data" | grep "synodrivedb")" != "" ]]; then
 				echo -e "\n\n"
@@ -413,7 +411,7 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 			else
 				disk_status=0
 				send_mail "$email_last_sent" "Warning SMART disk $disk on $nas_name has either reported an error, or did not pass the last SMART test, review the latest SMART data for more details" "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
-			fi
+			fi			
 
 			#explode out the different items, separated by \n
 			IFS=$'\n' read -rd '' -a exploded_data <<<"$data"
@@ -421,40 +419,143 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 			#we now need to loop through all of the different parameters this particular disk's SMART data returns	
 			yy=0
 			for yy in "${!exploded_data[@]}"; do
-				#explode out the different items, separated by " "
-				IFS=$' ' read -rd '' -a exploded_data2 <<<"${exploded_data[$yy]}"
+				if [[ "${exploded_data[$yy]}" != *"|"* ]] then
+					#echo "skipping row"
+				#else
+					#explode out the different items, separated by " "
+					IFS=$' ' read -rd '' -a exploded_data2 <<<"${exploded_data[$yy]}"
 
-				#have to remove the new line at the end of the last entry of the array
-				name=${exploded_data2[$(( ${#exploded_data2[@]} - 1 ))]} 					#get the last value of the last entry in the array
-				exploded_data2[$(( ${#exploded_data2[@]} - 1 ))]="${name//[$'\t\r\n']}"		#remove any new line breaks from the entry and save back into the array
+					#have to remove the new line at the end of the last entry of the array
+					name=${exploded_data2[$(( ${#exploded_data2[@]} - 1 ))]} 					#get the last value of the last entry in the array
+					exploded_data2[$(( ${#exploded_data2[@]} - 1 ))]="${name//[$'\t\r\n']}"		#remove any new line breaks from the entry and save back into the array
 
-				if [[ "${exploded_data2[1]}" != "ATTRIBUTE_NAME" ]]; then #filtering out the table header information since we do not want that
-					post_url=$post_url"$measurement,nas_name=$nas_name,disk_path=$disk,smart_attribute=${exploded_data2[1]} disk_model=\""$disk_model"\",disk_serial=\""$disk_serial"\",ID=${exploded_data2[0]},current_value=${exploded_data2[3]},worst_value=${exploded_data2[4]},threshold_value=${exploded_data2[5]},RAW_value=${exploded_data2[9]},disk_status=$disk_status
-"
-				fi
-					
-				#are email notifications enabled?
-				if [[ $enable_email_notifications == 1 ]]; then
-					for attribute_counter in "${!paramter_name[@]}" 
-					do
-						if [[ "${exploded_data2[1]}" == "${paramter_name[$attribute_counter]}" ]]; then
-							if [[ "${paramter_type[$attribute_counter]}" == ">" ]]; then
-								if [ "${exploded_data2[9]}" -gt "${paramter_notification_threshold[$attribute_counter]}" ]; then
-									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name has exceeded the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
-								fi
-							elif [[ "${paramter_type[$attribute_counter]}" == "=" ]]; then
-								if [ "${exploded_data2[9]}" -eq "${paramter_notification_threshold[$attribute_counter]}" ]; then
-									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
-								fi
-							elif [[ "${paramter_type[$attribute_counter]}" == "<" ]]; then
-								if [ "${exploded_data2[9]}" -lt "${paramter_notification_threshold[$attribute_counter]}" ]; then
-									send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[9]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
+					if [[ "${exploded_data2[1]}" != "ATTRIBUTE_NAME" ]]; then #filtering out the table header information since we do not want that
+						post_url=$post_url"$measurement,nas_name=$nas_name,disk_serial=$disk_serial,smart_attribute=${exploded_data2[1]} disk_path=\""$disk"\",disk_model=\""$disk_model"\",ID=${exploded_data2[0]},current_value=${exploded_data2[3]},worst_value=${exploded_data2[4]},threshold_value=${exploded_data2[5]},RAW_value=${exploded_data2[7]},disk_status=$disk_status
+	"
+					fi
+						
+					#are email notifications enabled?
+					if [[ $enable_email_notifications == 1 ]]; then
+						for attribute_counter in "${!paramter_name[@]}" 
+						do
+							if [[ "${exploded_data2[1]}" == "${paramter_name[$attribute_counter]}" ]]; then
+								if [[ "${paramter_type[$attribute_counter]}" == ">" ]]; then
+									if [ "${exploded_data2[7]}" -gt "${paramter_notification_threshold[$attribute_counter]}" ]; then
+										send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name has exceeded the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[7]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
+									fi
+								elif [[ "${paramter_type[$attribute_counter]}" == "=" ]]; then
+									if [ "${exploded_data2[7]}" -eq "${paramter_notification_threshold[$attribute_counter]}" ]; then
+										send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is equal to the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[7]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
+									fi
+								elif [[ "${paramter_type[$attribute_counter]}" == "<" ]]; then
+									if [ "${exploded_data2[7]}" -lt "${paramter_notification_threshold[$attribute_counter]}" ]; then
+										send_mail "$email_last_sent" "Warning SMART Attribute \"${exploded_data2[1]}\" on disk $disk on $nas_name is less than the threshold value of ${paramter_notification_threshold[$attribute_counter]}. It currently is reporting a value of ${exploded_data2[7]}." "$disk SMART ALERT for $nas_name" "$email_contents" "SMART Alert" 0 "$use_sendmail"
+									fi
 								fi
 							fi
-						fi
-					done
+						done
+					fi
 				fi
 			done
+			
+			LifetimePowerOnResets=$(echo "$raw_data" | grep "Lifetime Power-On Resets")
+			IFS=$' ' read -rd '' -a LifetimePowerOnResets <<<"$LifetimePowerOnResets"
+			if [[ "${LifetimePowerOnResets[3]}" == "" ]]; then
+				LifetimePowerOnResets[3]=-1
+			fi
+			
+			PoweronHours=$(echo "$raw_data" | grep "Power-on Hours")
+			IFS=$' ' read -rd '' -a PoweronHours <<<"$PoweronHours"
+			if [[ "${PoweronHours[3]}" == "" ]]; then
+				PoweronHours[3]=-1
+			fi
+			
+			LogicalSectorsWritten=$(echo "$raw_data" | grep "Logical Sectors Written")
+			IFS=$' ' read -rd '' -a LogicalSectorsWritten <<<"$LogicalSectorsWritten"
+			if [[ "${LogicalSectorsWritten[3]}" == "" ]]; then
+				LogicalSectorsWritten[3]=-1
+			fi
+			
+			LogicalSectorsRead=$(echo "$raw_data" | grep "Logical Sectors Read")
+			IFS=$' ' read -rd '' -a LogicalSectorsRead <<<"$LogicalSectorsRead"
+			if [[ "${LogicalSectorsRead[3]}" == "" ]]; then
+				LogicalSectorsRead[3]=-1
+			fi
+			
+			NumberofReadCommands=$(echo "$raw_data" | grep "Number of Read Commands")
+			IFS=$' ' read -rd '' -a NumberofReadCommands <<<"$NumberofReadCommands"
+			if [[ "${NumberofReadCommands[3]}" == "" ]]; then
+				NumberofReadCommands[3]=-1
+			fi
+			
+			SpindleMotorPoweronHours=$(echo "$raw_data" | grep "Spindle Motor Power-on Hours")
+			IFS=$' ' read -rd '' -a SpindleMotorPoweronHours <<<"$SpindleMotorPoweronHours"
+			if [[ "${SpindleMotorPoweronHours[3]}" == "" ]]; then
+				SpindleMotorPoweronHours[3]=-1
+			fi
+			
+			HeadFlyingHours=$(echo "$raw_data" | grep "Head Flying Hours")
+			IFS=$' ' read -rd '' -a HeadFlyingHours <<<"$HeadFlyingHours"
+			if [[ "${HeadFlyingHours[3]}" == "" ]]; then
+				HeadFlyingHours[3]=-1
+			fi
+			
+			HeadLoadEvents=$(echo "$raw_data" | grep "Head Load Events")
+			IFS=$' ' read -rd '' -a HeadLoadEvents <<<"$HeadLoadEvents"
+			if [[ "${HeadLoadEvents[3]}" == "" ]]; then
+				HeadLoadEvents[3]=-1
+			fi
+			
+			NumberofReallocatedLogicalSectors=$(echo "$raw_data" | grep "Number of Reallocated Logical Sectors")
+			IFS=$' ' read -rd '' -a NumberofReallocatedLogicalSectors <<<"$NumberofReallocatedLogicalSectors"
+			if [[ "${NumberofReallocatedLogicalSectors[3]}" == "" ]]; then
+				NumberofReallocatedLogicalSectors[3]=-1
+			fi
+			
+			ReadRecoveryAttempts=$(echo "$raw_data" | grep "Read Recovery Attempts")
+			IFS=$' ' read -rd '' -a ReadRecoveryAttempts <<<"$ReadRecoveryAttempts"
+			if [[ "${ReadRecoveryAttempts[3]}" == "" ]]; then
+				ReadRecoveryAttempts[3]=-1
+			fi
+			
+			NumberofMechanicalStartFailures=$(echo "$raw_data" | grep "Number of Mechanical Start Failures")
+			IFS=$' ' read -rd '' -a NumberofMechanicalStartFailures <<<"$NumberofMechanicalStartFailures"
+			if [[ "${NumberofMechanicalStartFailures[3]}" == "" ]]; then
+				NumberofMechanicalStartFailures[3]=-1
+			fi
+			
+			NumberofReportedUncorrectableErrors=$(echo "$raw_data" | grep "Number of Reported Uncorrectable Errors")
+			IFS=$' ' read -rd '' -a NumberofReportedUncorrectableErrors <<<"$NumberofReportedUncorrectableErrors"
+			if [[ "${NumberofReportedUncorrectableErrors[3]}" == "" ]]; then
+				NumberofReportedUncorrectableErrors[3]=-1
+			fi
+			
+			ResetsBetweenCmdAcceptanceandCompletion=$(echo "$raw_data" | grep "Resets Between Cmd Acceptance and Completion")
+			IFS=$' ' read -rd '' -a ResetsBetweenCmdAcceptanceandCompletion <<<"$ResetsBetweenCmdAcceptanceandCompletion"
+			if [[ "${ResetsBetweenCmdAcceptanceandCompletion[3]}" == "" ]]; then
+				ResetsBetweenCmdAcceptanceandCompletion[3]=-1
+			fi
+			
+			NumberofHardwareResets=$(echo "$raw_data" | grep "Number of Hardware Resets")
+			IFS=$' ' read -rd '' -a NumberofHardwareResets <<<"$NumberofHardwareResets"
+			if [[ "${NumberofHardwareResets[3]}" == "" ]]; then
+				NumberofHardwareResets[3]=-1
+			fi
+			
+			NumberofASREvents=$(echo "$raw_data" | grep "Number of ASR Events")
+			IFS=$' ' read -rd '' -a NumberofASREvents <<<"$NumberofASREvents"
+			if [[ "${NumberofASREvents[3]}" == "" ]]; then
+				NumberofASREvents[3]=-1
+			fi
+			
+			NumberofInterfaceCRCErrors=$(echo "$raw_data" | grep "Number of Interface CRC Errors")
+			IFS=$' ' read -rd '' -a NumberofInterfaceCRCErrors <<<"$NumberofInterfaceCRCErrors"
+			if [[ "${NumberofInterfaceCRCErrors[3]}" == "" ]]; then
+				NumberofInterfaceCRCErrors[3]=-1
+			fi
+
+			post_url=$post_url"$measurement,nas_name=$nas_name,disk_serial=$disk_serial,smart_attribute=extended_attribute LifetimePowerOnResets=${LifetimePowerOnResets[3]},PoweronHours=${PoweronHours[3]},LogicalSectorsWritten=${LogicalSectorsWritten[3]},LogicalSectorsRead=${LogicalSectorsRead[3]},NumberofReadCommands=${NumberofReadCommands[3]},SpindleMotorPoweronHours=${SpindleMotorPoweronHours[3]},HeadFlyingHours=${HeadFlyingHours[3]},HeadLoadEvents=${HeadLoadEvents[3]},NumberofReallocatedLogicalSectors=${NumberofReallocatedLogicalSectors[3]},ReadRecoveryAttempts=${ReadRecoveryAttempts[3]},NumberofMechanicalStartFailures=${NumberofMechanicalStartFailures[3]},NumberofReportedUncorrectableErrors=${NumberofReportedUncorrectableErrors[3]},ResetsBetweenCmdAcceptanceandCompletion=${ResetsBetweenCmdAcceptanceandCompletion[3]},NumberofHardwareResets=${NumberofHardwareResets[3]},NumberofInterfaceCRCErrors=${NumberofInterfaceCRCErrors[3]}
+"
 		done
 		
 		
@@ -472,7 +573,8 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 		else
 			for (( c=0; c<$nvme_number_installed; c++ ))
 			do 
-				post_url=$post_url"$measurement,nas_name=$nas_name,disk_path=/dev/nvme${c}n1 "
+				disk_serial=$(cat /sys/block/nvme${c}n1/device/serial)
+				post_url=$post_url"$measurement,nas_name=$nas_name,disk_serial=$disk_serial disk_path=\""/dev/nvme${c}n1"\","
 				line_num=0
 				while IFS= read -r line; do
 									
@@ -528,18 +630,13 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 "
 			done
 		fi
-			
-		#Post to influxdb
-		if [[ $influx_db_version == 1 ]]; then
-			echo "saving using influx version 1"
-			curl -i -XPOST "http://$influxdb_host:$influxdb_port/write?u=$influxdb_user&p=$influxdb_pass&db=$influxdb_name" --data-binary "$post_url"
-		else
-			curl -XPOST "http://$influxdb_host:$influxdb_port/api/v2/write?bucket=$influxdb_name&org=$influxdb_org" -H "Authorization: Token $influxdb_pass" --data-raw "$post_url"
-		fi
-		
-		if [[ $debug == 1 ]]; then
+		if [[ $debug -eq 1 ]]; then
 			echo "$post_url"
 		fi
+				
+		echo "$post_url" > "/mnt/ramfs/smart_data.txt"
+			
+		curl -XPOST "http://$influxdb_host:$influxdb_port/api/v2/write?bucket=$influxdb_name&org=$influxdb_org" -H "Authorization: Token $influxdb_pass" --data-binary "@/mnt/ramfs/smart_data.txt"
 	else
 		echo "script is disabled"
 	fi
