@@ -61,6 +61,34 @@
 
 The script collects Disk SMART details for SATA drives and USB drives using the ```smartctl``` commands, and NVME drives using ```nvme smart-log``` commands. It saves the data to InfluxDB. This script will also send email notifications for up to 20x drive SMART parameters that are either above, equal to, or below a configurable value in a basic web interface.  
 
+This script also logs and monitors the extended smart attribues like:
+
+```
+	Device Statistics (GP Log 0x04)
+Page  Offset Size        Value Flags Description
+0x01  =====  =               =  ===  == General Statistics (rev 1) ==
+0x01  0x008  4              23  ---  Lifetime Power-On Resets
+0x01  0x010  4           52365  ---  Power-on Hours
+0x03  =====  =               =  ===  == Rotating Media Statistics (rev 1) ==
+0x03  0x008  4           52037  ---  Spindle Motor Power-on Hours
+0x03  0x010  4           52037  ---  Head Flying Hours
+0x03  0x018  4            2170  ---  Head Load Events
+0x03  0x020  4               0  ---  Number of Reallocated Logical Sectors
+0x03  0x028  4              13  ---  Read Recovery Attempts
+0x03  0x030  4               0  ---  Number of Mechanical Start Failures
+0x04  =====  =               =  ===  == General Errors Statistics (rev 1) ==
+0x04  0x008  4               0  ---  Number of Reported Uncorrectable Errors
+0x04  0x010  4               9  ---  Resets Between Cmd Acceptance and Completion
+0x06  =====  =               =  ===  == Transport Statistics (rev 1) ==
+0x06  0x008  4               0  ---  Number of Hardware Resets
+0x06  0x010  4              66  ---  Number of ASR Events
+0x06  0x018  4               2  ---  Number of Interface CRC Errors
+0xff  =====  =               =  ===  == Vendor Specific Statistics (rev 1) ==
+                                |||_ C monitored condition met
+                                ||__ D supports DSN
+                                |___ N normalized value
+```
+
 <!-- GETTING STARTED -->
 ## Getting Started
 
