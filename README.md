@@ -11,7 +11,7 @@
 <h3 align="center">SATA and NVME Disk SMART Attribute Logger to InfluxDB</h3>
 
   <p align="center">
-    This project is comprised of a shell script that runs as often as desired (I recommend every 12 hours) collecting data from linux using the "smartctl" and "nvme smart-log" commands for all drives installed within the system (including USB drives) and placing it into InfluxDB. This script will also send email notifications of up to 20x drive SMART parameters are either above, equal to, or below a value of your choice.
+    This project is comprised of a shell script that runs as often as desired (I recommend every hour) collecting data from linux using the "smartctl" and "nvme smart-log" commands for all drives installed within the system (including USB drives) and placing it into InfluxDB. This script will also send email notifications of up to 20x drive SMART parameters are either above, equal to, or below a value of your choice.
 
    Credit for the TrueNAS email sending goes to <a href="https://github.com/oxyde1989/standalone-tn-send-email/tree/main"><strong>oxyde1989</strong></a>
     <br />
