@@ -1,6 +1,6 @@
 #!/bin/bash
 # shellcheck disable=SC2162,SC2004,SC2129,SC2116,SC2321,SC2027,SC2086,SC2219
-#Version 6/11/2025
+#Version 11/19/2025
 #made updates to appease shell check
 #By Brian Wallace
 #########################################################
@@ -554,7 +554,7 @@ if [ -r "$config_file_location"/"$config_file_name" ]; then
 				NumberofInterfaceCRCErrors[3]=-1
 			fi
 
-			post_url=$post_url"$measurement,nas_name=$nas_name,disk_serial=$disk_serial,smart_attribute=extended_attribute LifetimePowerOnResets=${LifetimePowerOnResets[3]},PoweronHours=${PoweronHours[3]},LogicalSectorsWritten=${LogicalSectorsWritten[3]},LogicalSectorsRead=${LogicalSectorsRead[3]},NumberofReadCommands=${NumberofReadCommands[3]},SpindleMotorPoweronHours=${SpindleMotorPoweronHours[3]},HeadFlyingHours=${HeadFlyingHours[3]},HeadLoadEvents=${HeadLoadEvents[3]},NumberofReallocatedLogicalSectors=${NumberofReallocatedLogicalSectors[3]},ReadRecoveryAttempts=${ReadRecoveryAttempts[3]},NumberofMechanicalStartFailures=${NumberofMechanicalStartFailures[3]},NumberofReportedUncorrectableErrors=${NumberofReportedUncorrectableErrors[3]},ResetsBetweenCmdAcceptanceandCompletion=${ResetsBetweenCmdAcceptanceandCompletion[3]},NumberofHardwareResets=${NumberofHardwareResets[3]},NumberofInterfaceCRCErrors=${NumberofInterfaceCRCErrors[3]}
+			post_url=$post_url"$measurement,nas_name=$nas_name,disk_serial=$disk_serial,smart_attribute=extended_attribute LifetimePowerOnResets=${LifetimePowerOnResets[3]},PoweronHours=${PoweronHours[3]},LogicalSectorsWritten=${LogicalSectorsWritten[3]},LogicalSectorsRead=${LogicalSectorsRead[3]},NumberofReadCommands=${NumberofReadCommands[3]},SpindleMotorPoweronHours=${SpindleMotorPoweronHours[3]},HeadFlyingHours=${HeadFlyingHours[3]},HeadLoadEvents=${HeadLoadEvents[3]},NumberofReallocatedLogicalSectors=${NumberofReallocatedLogicalSectors[3]},ReadRecoveryAttempts=${ReadRecoveryAttempts[3]},NumberofMechanicalStartFailures=${NumberofMechanicalStartFailures[3]},NumberofReportedUncorrectableErrors=${NumberofReportedUncorrectableErrors[3]},ResetsBetweenCmdAcceptanceandCompletion=${ResetsBetweenCmdAcceptanceandCompletion[3]},NumberofHardwareResets=${NumberofHardwareResets[3]},NumberofInterfaceCRCErrors=${NumberofInterfaceCRCErrors[3]},NumberofASREvents=${NumberofASREvents[3]}
 "
 		done
 		
