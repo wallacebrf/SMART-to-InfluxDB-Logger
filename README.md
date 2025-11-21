@@ -167,48 +167,6 @@ for ```synology=0``` only set to a value of 1 if installing this script on a syn
 
 For the ```EMAIL SETTINGS USED IF CONFIGURATION FILE IS UNAVAILABLE``` settings, configure the email address details as desired.
 
-
-3. Delete the the following lines as those are for my personal use as I use this script for several units that have slightly different configurations	
-```
-#for my personal use as i have multiple Synology systems, these lines can be deleted and the variables above can be un-commented
-######################################################################################
-sever_type=1 #1=server2, 2=serverNVR, 3=serverplex
-
-if [[ $sever_type == 1 ]]; then
-	config_file_location="/volume1/web/config/config_files/config_files_local"
-	config_file_name="smart_logging_config.txt"
-	measurement="synology_SMART_status2"
-	nas_name="Server2"
-	use_sendmail=1
-fi
-
-if [[ $sever_type == 2 ]]; then
-	config_file_location="/volume1/web/logging"
-	config_file_name="smart_logging_config.txt"
-	measurement="synology_SMART_status2"
-	nas_name="Server_NVR"
-	use_sendmail=1
-fi
-
-if [[ $sever_type == 3 ]]; then
-	config_file_location="/volume1/web/config/config_files/config_files_local"
-	config_file_name="smart_logging_config.txt"
-	measurement="synology_SMART_status2"
-	nas_name="Server-Plex"
-	use_sendmail=1
-fi
-
-if [[ $sever_type == 4 ]]; then
-	config_file_location="/mnt/volume1/web/config"
-	config_file_name="smart_logging_config.txt"
-	measurement="TrueNAS_SMART_status"
-	nas_name="TrueNAS"
-	use_sendmail=2  #use TrueNAS
-fi
-
-######################################################################################
-```
-
 if using TrueNAS, find the following line
 
 `python3 /mnt/volume1/web/logging/multireport_sendemail.py --subject "${3}" --to_address "${address_explode[$bb]}" --mail_body_html "$now - ${2}" --override_fromemail "$from_email_address"`
